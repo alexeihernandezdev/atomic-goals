@@ -8,7 +8,7 @@ import type { Category } from "@/modules/categories/domain/entities/category";
 import type { CategoryFormValues } from "../schemas/category.schema";
 import { CategoryFormSheet } from "./CategoryFormSheet";
 import { CatIcon } from "./CatIcon";
-import { DASH_PALETTES, type DashPalette } from "./palette";
+import { DASH_PALETTES, type DashPalette } from "@/shared/presentation/palette";
 
 interface CategoryDetailScreenProps {
   category: Category;

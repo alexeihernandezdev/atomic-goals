@@ -11,7 +11,7 @@ import {
 } from "../schemas/category.schema";
 import type { Category } from "@/modules/categories/domain/entities/category";
 import { CatIcon } from "./CatIcon";
-import type { DashPalette } from "./palette";
+import type { DashPalette } from "@/shared/presentation/palette";
 
 interface CategoryFormSheetProps {
   palette: DashPalette;

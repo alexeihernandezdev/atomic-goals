@@ -8,7 +8,7 @@ import type { CategoryFormValues } from "../schemas/category.schema";
 import { CategoryCard } from "./CategoryCard";
 import { CategoryFormSheet } from "./CategoryFormSheet";
 import { CatIcon } from "./CatIcon";
-import { DASH_PALETTES, type DashPalette } from "./palette";
+import { DASH_PALETTES, type DashPalette } from "@/shared/presentation/palette";
 
 interface CategoryListScreenProps {
   initialCategories: Category[];
