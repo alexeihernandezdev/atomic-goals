@@ -20,6 +20,14 @@ import { UpdateGoalUseCase } from "@/modules/goals/application/use-cases/update-
 import { DeleteGoalUseCase } from "@/modules/goals/application/use-cases/delete-goal.use-case";
 import { RestoreGoalUseCase } from "@/modules/goals/application/use-cases/restore-goal.use-case";
 import { ListGoalInstancesUseCase } from "@/modules/goals/application/use-cases/list-goal-instances.use-case";
+import { HttpStepGateway } from "@/modules/steps/infrastructure/http-step.gateway";
+import { ListStepsUseCase } from "@/modules/steps/application/use-cases/list-steps.use-case";
+import { CreateStepUseCase } from "@/modules/steps/application/use-cases/create-step.use-case";
+import { UpdateStepMetadataUseCase } from "@/modules/steps/application/use-cases/update-metadata.use-case";
+import { UpdateStepProgressUseCase } from "@/modules/steps/application/use-cases/update-progress.use-case";
+import { DeleteStepUseCase } from "@/modules/steps/application/use-cases/delete-step.use-case";
+import { RestoreStepUseCase } from "@/modules/steps/application/use-cases/restore-step.use-case";
+import { ReorderStepUseCase } from "@/modules/steps/application/use-cases/reorder-step.use-case";
 import { createServerClient } from "@/shared/infrastructure/api/server-client";
 
 export interface AuthUseCases {
@@ -49,10 +57,21 @@ export interface GoalUseCases {
   listInstances: ListGoalInstancesUseCase;
 }
 
+export interface StepUseCases {
+  list: ListStepsUseCase;
+  create: CreateStepUseCase;
+  updateMetadata: UpdateStepMetadataUseCase;
+  updateProgress: UpdateStepProgressUseCase;
+  delete: DeleteStepUseCase;
+  restore: RestoreStepUseCase;
+  reorder: ReorderStepUseCase;
+}
+
 export interface ServerContainer {
   auth: AuthUseCases;
   categories: CategoryUseCases;
   goals: GoalUseCases;
+  steps: StepUseCases;
   health: { check: () => Promise<{ ok: boolean; timestamp: string }> };
 }
 
@@ -65,6 +84,7 @@ export async function serverContainer(): Promise<ServerContainer> {
 
   const categoryGateway = new HttpCategoryGateway(httpClient);
   const goalGateway = new HttpGoalGateway(httpClient);
+  const stepGateway = new HttpStepGateway(httpClient);
 
   return {
     auth: {
@@ -90,6 +110,15 @@ export async function serverContainer(): Promise<ServerContainer> {
       delete: new DeleteGoalUseCase(goalGateway),
       restore: new RestoreGoalUseCase(goalGateway),
       listInstances: new ListGoalInstancesUseCase(goalGateway),
+    },
+    steps: {
+      list: new ListStepsUseCase(stepGateway),
+      create: new CreateStepUseCase(stepGateway),
+      updateMetadata: new UpdateStepMetadataUseCase(stepGateway),
+      updateProgress: new UpdateStepProgressUseCase(stepGateway),
+      delete: new DeleteStepUseCase(stepGateway),
+      restore: new RestoreStepUseCase(stepGateway),
+      reorder: new ReorderStepUseCase(stepGateway),
     },
     health: {
       check: async () => ({ ok: true, timestamp: new Date().toISOString() }),
