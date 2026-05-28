@@ -19,6 +19,11 @@ interface AuthApiClient {
   ): Promise<{ data: unknown; error: unknown }>;
 }
 
+// All responses are wrapped by TransformInterceptor: { data: T }
+function unwrap<T>(data: unknown): T {
+  return (data as { data: T }).data;
+}
+
 export class HttpAuthGateway implements AuthGateway {
   constructor(private readonly client: AuthApiClient) {}
 
@@ -27,7 +32,7 @@ export class HttpAuthGateway implements AuthGateway {
       body: command,
     });
     if (error) throw mapHttpError(error);
-    const raw = data as { accessToken: string; user: unknown };
+    const raw = unwrap<{ accessToken: string; user: unknown }>(data);
     return {
       accessToken: raw.accessToken,
       user: UserMapper.toDomain(raw.user as Parameters<typeof UserMapper.toDomain>[0]),
@@ -39,7 +44,7 @@ export class HttpAuthGateway implements AuthGateway {
       body: command,
     });
     if (error) throw mapHttpError(error);
-    const raw = data as { accessToken: string; user: unknown };
+    const raw = unwrap<{ accessToken: string; user: unknown }>(data);
     return {
       accessToken: raw.accessToken,
       user: UserMapper.toDomain(raw.user as Parameters<typeof UserMapper.toDomain>[0]),
@@ -59,10 +64,11 @@ export class HttpAuthGateway implements AuthGateway {
       headers: { Cookie: `refresh_token=${refreshToken}` },
     });
     if (error) throw mapHttpError(error);
-    const raw = data as { accessToken: string; user: unknown };
+    // Backend refresh only returns accessToken, not user
+    const raw = unwrap<{ accessToken: string }>(data);
     return {
       accessToken: raw.accessToken,
-      user: UserMapper.toDomain(raw.user as Parameters<typeof UserMapper.toDomain>[0]),
+      user: undefined as unknown as User,
     };
   }
 
@@ -71,6 +77,7 @@ export class HttpAuthGateway implements AuthGateway {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     if (error) throw mapHttpError(error);
-    return UserMapper.toDomain(data as Parameters<typeof UserMapper.toDomain>[0]);
+    const raw = unwrap<Parameters<typeof UserMapper.toDomain>[0]>(data);
+    return UserMapper.toDomain(raw);
   }
 }
