@@ -10,7 +10,7 @@ export class LoginUseCase {
 
   async execute(command: LoginCommand): Promise<AuthResult> {
     const result = await this.authGateway.login(command);
-    await this.sessionGateway.setSession(result.accessToken, result.user);
+    await this.sessionGateway.setSession(result.accessToken, result.user, result.refreshToken);
     return result;
   }
 }

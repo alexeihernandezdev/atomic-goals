@@ -11,16 +11,32 @@ export async function POST(request: NextRequest) {
   try {
     const container = await serverContainer();
     const result = await container.auth.refreshSession.execute(refreshToken);
-    const res = NextResponse.json({ ok: true });
+
+    const secure = process.env.NODE_ENV === "production";
+    const res = NextResponse.json({ ok: true, accessToken: result.accessToken });
+
     res.cookies.set("access_token", result.accessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure,
       sameSite: "lax",
       maxAge: 60 * 60,
       path: "/",
     });
+
+    if (result.refreshToken) {
+      res.cookies.set("refresh_token", result.refreshToken, {
+        httpOnly: true,
+        secure,
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 30,
+        path: "/",
+      });
+    }
+
     return res;
   } catch {
-    return NextResponse.json({ error: "Refresh failed" }, { status: 401 });
+    const res = NextResponse.json({ error: "Refresh failed" }, { status: 401 });
+    res.cookies.delete("refresh_token");
+    return res;
   }
 }

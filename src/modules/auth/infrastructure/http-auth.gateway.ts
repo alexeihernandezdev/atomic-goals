@@ -12,11 +12,11 @@ interface AuthApiClient {
   POST(
     path: string,
     options: { body: unknown; headers?: Record<string, string> },
-  ): Promise<{ data: unknown; error: unknown }>;
+  ): Promise<{ data: unknown; error: unknown; response: Response }>;
   GET(
     path: string,
     options: { headers?: Record<string, string> },
-  ): Promise<{ data: unknown; error: unknown }>;
+  ): Promise<{ data: unknown; error: unknown; response: Response }>;
 }
 
 // All responses are wrapped by TransformInterceptor: { data: T }
@@ -24,11 +24,25 @@ function unwrap<T>(data: unknown): T {
   return (data as { data: T }).data;
 }
 
+// Extract the refresh_token value from Set-Cookie response headers (server-side only)
+function extractRefreshToken(response: Response): string | undefined {
+  const headers = response.headers as Headers & { getSetCookie?: () => string[] };
+  const setCookies: string[] =
+    typeof headers.getSetCookie === "function"
+      ? headers.getSetCookie()
+      : (headers.get("set-cookie") ?? "").split(/,\s*(?=[a-zA-Z_-])/);
+
+  const refreshCookie = setCookies.find((c) => c.trim().startsWith("refresh_token="));
+  if (!refreshCookie) return undefined;
+  // Value is everything between '=' and the first ';'
+  return refreshCookie.split(";")[0].split("=").slice(1).join("=") || undefined;
+}
+
 export class HttpAuthGateway implements AuthGateway {
   constructor(private readonly client: AuthApiClient) {}
 
   async login(command: LoginCommand): Promise<AuthResult> {
-    const { data, error } = await this.client.POST("/auth/login", {
+    const { data, error, response } = await this.client.POST("/auth/login", {
       body: command,
     });
     if (error) throw mapHttpError(error);
@@ -36,11 +50,12 @@ export class HttpAuthGateway implements AuthGateway {
     return {
       accessToken: raw.accessToken,
       user: UserMapper.toDomain(raw.user as Parameters<typeof UserMapper.toDomain>[0]),
+      refreshToken: extractRefreshToken(response),
     };
   }
 
   async register(command: RegisterCommand): Promise<AuthResult> {
-    const { data, error } = await this.client.POST("/auth/register", {
+    const { data, error, response } = await this.client.POST("/auth/register", {
       body: command,
     });
     if (error) throw mapHttpError(error);
@@ -48,6 +63,7 @@ export class HttpAuthGateway implements AuthGateway {
     return {
       accessToken: raw.accessToken,
       user: UserMapper.toDomain(raw.user as Parameters<typeof UserMapper.toDomain>[0]),
+      refreshToken: extractRefreshToken(response),
     };
   }
 
@@ -59,16 +75,16 @@ export class HttpAuthGateway implements AuthGateway {
   }
 
   async refresh(refreshToken: string): Promise<AuthResult> {
-    const { data, error } = await this.client.POST("/auth/refresh", {
+    const { data, error, response } = await this.client.POST("/auth/refresh", {
       body: {},
       headers: { Cookie: `refresh_token=${refreshToken}` },
     });
     if (error) throw mapHttpError(error);
-    // Backend refresh only returns accessToken, not user
     const raw = unwrap<{ accessToken: string }>(data);
     return {
       accessToken: raw.accessToken,
       user: undefined as unknown as User,
+      refreshToken: extractRefreshToken(response),
     };
   }
 

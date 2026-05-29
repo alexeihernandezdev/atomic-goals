@@ -10,7 +10,7 @@ export class RefreshSessionUseCase {
 
   async execute(refreshToken: string): Promise<AuthResult> {
     const result = await this.authGateway.refresh(refreshToken);
-    await this.sessionGateway.setSession(result.accessToken, result.user);
+    await this.sessionGateway.setSession(result.accessToken, result.user, result.refreshToken);
     return result;
   }
 }
