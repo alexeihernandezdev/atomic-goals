@@ -1,41 +1,45 @@
-/**
- * Server Composition Root.
- * Used by Server Components and Server Actions.
- * Reads cookies from the request context for auth forwarding.
- *
- * ⚠️  This is a stub — use cases will be wired in their respective phases.
- */
+import { HttpAuthGateway } from "@/modules/auth/infrastructure/http-auth.gateway";
+import { NextCookieSessionGateway } from "@/modules/auth/infrastructure/next-cookie-session.gateway";
+import { LoginUseCase } from "@/modules/auth/application/use-cases/login.use-case";
+import { RegisterUseCase } from "@/modules/auth/application/use-cases/register.use-case";
+import { LogoutUseCase } from "@/modules/auth/application/use-cases/logout.use-case";
+import { RefreshSessionUseCase } from "@/modules/auth/application/use-cases/refresh-session.use-case";
+import { GetCurrentUserUseCase } from "@/modules/auth/application/use-cases/get-current-user.use-case";
+import { createServerClient } from "@/shared/infrastructure/api/server-client";
 
-// TODO (Phase 1): import HttpAuthGateway, NextCookieSessionGateway, LoginUseCase, etc.
-// TODO (Phase 2-8): import and wire remaining gateways + use cases.
+export interface AuthUseCases {
+  login: LoginUseCase;
+  register: RegisterUseCase;
+  logout: LogoutUseCase;
+  refreshSession: RefreshSessionUseCase;
+  getCurrentUser: GetCurrentUserUseCase;
+}
 
 export interface ServerContainer {
-  health: {
-    check: () => Promise<{ ok: boolean; timestamp: string }>;
-  };
-  // auth:       AuthUseCases     — wired in Phase 1
-  // categories: CategoryUseCases — wired in Phase 2
-  // goals:      GoalUseCases     — wired in Phase 3
-  // steps:      StepUseCases     — wired in Phase 4
-  // dashboard:  DashboardUseCases — wired in Phase 5
+  auth: AuthUseCases;
+  health: { check: () => Promise<{ ok: boolean; timestamp: string }> };
+  // categories: CategoryUseCases — Phase 2
+  // goals:      GoalUseCases     — Phase 3
+  // steps:      StepUseCases     — Phase 4
+  // dashboard:  DashboardUseCases — Phase 5
 }
 
-function createServerContainer(): ServerContainer {
+export async function serverContainer(): Promise<ServerContainer> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const httpClient = (await createServerClient()) as any;
+  const authGateway = new HttpAuthGateway(httpClient);
+  const sessionGateway = new NextCookieSessionGateway();
+
   return {
+    auth: {
+      login: new LoginUseCase(authGateway, sessionGateway),
+      register: new RegisterUseCase(authGateway, sessionGateway),
+      logout: new LogoutUseCase(authGateway, sessionGateway),
+      refreshSession: new RefreshSessionUseCase(authGateway, sessionGateway),
+      getCurrentUser: new GetCurrentUserUseCase(authGateway, sessionGateway),
+    },
     health: {
-      check: async () => ({
-        ok: true,
-        timestamp: new Date().toISOString(),
-      }),
+      check: async () => ({ ok: true, timestamp: new Date().toISOString() }),
     },
   };
-}
-
-let _container: ServerContainer | null = null;
-
-export function serverContainer(): ServerContainer {
-  if (!_container) {
-    _container = createServerContainer();
-  }
-  return _container;
 }

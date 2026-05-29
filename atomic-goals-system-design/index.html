@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<title>Atomic Goals · Vibrante</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  html, body { margin: 0; padding: 0; background: #f0eee9; }
+  body { font-family: "Space Grotesk", system-ui, sans-serif; }
+  .auth-mount { width: 100%; height: 100%; position: relative; overflow: hidden; }
+  .mobile-frame-wrap {
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    background: #f4f4ef;
+  }
+</style>
+</head>
+<body>
+
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="ios-frame.jsx"></script>
+<script type="text/babel" src="auth-shared.jsx"></script>
+<script type="text/babel" src="auth-vibrant.jsx"></script>
+<script type="text/babel" src="dashboard-shared.jsx"></script>
+<script type="text/babel" src="dashboard-desktop.jsx"></script>
+<script type="text/babel" src="dashboard-mobile.jsx"></script>
+<script type="text/babel" src="goals-shared.jsx"></script>
+<script type="text/babel" src="goals-list.jsx"></script>
+<script type="text/babel" src="goals-detail.jsx"></script>
+<script type="text/babel" src="categories.jsx"></script>
+
+<script type="text/babel" data-presets="react">
+  (function () {
+    const DesignCanvas = window.DesignCanvas;
+    const DCSection = window.DCSection;
+    const DCArtboard = window.DCArtboard;
+    const DCPostIt = window.DCPostIt;
+    const IOSDevice = window.IOSDevice;
+
+  function App() {
+    return (
+      <DesignCanvas>
+        <DCSection
+          id="auth"
+          title="Login & Registro"
+          subtitle="Vibrante · graphic + color blocks · light/dark interno · prototipo funcional"
+        >
+          <DCArtboard id="vibrant" label="Auth · desktop" width={1280} height={900}>
+            <div className="auth-mount">
+              <AuthVibrantApp />
+            </div>
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection
+          id="dashboard"
+          title="Dashboard"
+          subtitle="Hero con racha grande · stats · timeline · categorías · próximos pasos · actividad"
+        >
+          <DCArtboard id="dash-desktop" label="Dashboard · desktop" width={1440} height={1024}>
+            <div className="auth-mount">
+              <DashboardDesktop />
+            </div>
+          </DCArtboard>
+
+          <DCArtboard id="dash-mobile" label="Dashboard · iPhone" width={460} height={940} style={{ background: '#f4f4ef' }}>
+            <div className="mobile-frame-wrap">
+              <IOSDevice width={402} height={874}>
+                <DashboardMobile />
+              </IOSDevice>
+            </div>
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection
+          id="goals-list"
+          title="Metas — lista + filtros"
+          subtitle="Filtros vivos (categoría · tipo · estado) · vista grid/lista · light/dark"
+        >
+          <DCArtboard id="goals-list-desktop" label="Metas · lista · desktop" width={1440} height={1024}>
+            <div className="auth-mount">
+              <GoalsListDesktop />
+            </div>
+          </DCArtboard>
+
+          <DCArtboard id="goals-list-mobile" label="Metas · lista · iPhone" width={460} height={940} style={{ background: '#f4f4ef' }}>
+            <div className="mobile-frame-wrap">
+              <IOSDevice width={402} height={874}>
+                <GoalsListMobile />
+              </IOSDevice>
+            </div>
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection
+          id="goals-detail"
+          title="Meta — detalle con los 4 tipos de paso"
+          subtitle="Barra · Check · Estados · Contador — todos editables en vivo, todos contribuyen al % por peso"
+        >
+          <DCArtboard id="goals-detail-desktop" label="Meta · detalle · desktop" width={1440} height={1280}>
+            <div className="auth-mount">
+              <GoalsDetailDesktop />
+            </div>
+          </DCArtboard>
+
+          <DCArtboard id="goals-detail-mobile" label="Meta · detalle · iPhone" width={460} height={940} style={{ background: '#f4f4ef' }}>
+            <div className="mobile-frame-wrap">
+              <IOSDevice width={402} height={874}>
+                <GoalsDetailMobile />
+              </IOSDevice>
+            </div>
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection
+          id="categories"
+          title="Categorías"
+          subtitle="Grid con sheet de crear/editar (color + icon picker) · detalle por categoría con sus metas · vista mobile"
+        >
+          <DCArtboard id="cats-grid-desktop" label="Categorías · grid + nueva · desktop" width={1440} height={1024}>
+            <div className="auth-mount">
+              <CategoriesGridDesktop />
+            </div>
+          </DCArtboard>
+
+          <DCArtboard id="cats-detail-desktop" label="Categoría · detalle (salud) · desktop" width={1440} height={1024}>
+            <div className="auth-mount">
+              <CategoriesDetailDesktop />
+            </div>
+          </DCArtboard>
+
+          <DCArtboard id="cats-grid-mobile" label="Categorías · iPhone" width={460} height={940} style={{ background: '#f4f4ef' }}>
+            <div className="mobile-frame-wrap">
+              <IOSDevice width={402} height={874}>
+                <CategoriesGridMobile />
+              </IOSDevice>
+            </div>
+          </DCArtboard>
+        </DCSection>
+
+        <DCPostIt x={40} y={40} width={280}>
+          <strong>Cómo probar</strong><br/>
+          Auth: tabs <em>Entrar / Crear cuenta</em>, validación viva, animación de envío. Dashboard: cambia tema (sol/luna), filtra rango del timeline (7d/30d/90d), tacha pasos en móvil tocándolos.
+        </DCPostIt>
+
+        <DCPostIt x={40} y={320} width={280}>
+          <strong>Lo que viene</strong><br/>
+          Siguen: categorías (grid de cards con metas dentro), calendario (mes/semana con eventos), actividad (feed paginado), papelera (tabs + selección múltiple) y settings.
+        </DCPostIt>
+      </DesignCanvas>
+    );
+  }
+
+  ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  })();
+</script>
+</body>
+</html>
