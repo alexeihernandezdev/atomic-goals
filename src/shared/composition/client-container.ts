@@ -18,6 +18,8 @@ import { GetGoalUseCase } from "@/modules/goals/application/use-cases/get-goal.u
 import { CreateGoalUseCase } from "@/modules/goals/application/use-cases/create-goal.use-case";
 import { UpdateGoalUseCase } from "@/modules/goals/application/use-cases/update-goal.use-case";
 import { DeleteGoalUseCase } from "@/modules/goals/application/use-cases/delete-goal.use-case";
+import { HttpCalendarGateway } from "@/modules/calendar/infrastructure/http-calendar.gateway";
+import { GetCalendarEventsUseCase } from "@/modules/calendar/application/use-cases/get-calendar-events.use-case";
 import { apiClient } from "@/shared/infrastructure/api/openapi-client";
 
 export interface AuthUseCases {
@@ -43,10 +45,15 @@ export interface GoalUseCases {
   delete: DeleteGoalUseCase;
 }
 
+export interface CalendarUseCases {
+  getEvents: GetCalendarEventsUseCase;
+}
+
 export interface ClientContainer {
   auth: AuthUseCases;
   categories: CategoryUseCases;
   goals: GoalUseCases;
+  calendar: CalendarUseCases;
 }
 
 let _container: ClientContainer | null = null;
@@ -59,6 +66,7 @@ export function clientContainer(): ClientContainer {
     const sessionGateway = new BrowserSessionGateway();
     const categoryGateway = new HttpCategoryGateway(client);
     const goalGateway = new HttpGoalGateway(client);
+    const calendarGateway = new HttpCalendarGateway(client);
 
     _container = {
       auth: {
@@ -80,6 +88,9 @@ export function clientContainer(): ClientContainer {
         create: new CreateGoalUseCase(goalGateway),
         update: new UpdateGoalUseCase(goalGateway),
         delete: new DeleteGoalUseCase(goalGateway),
+      },
+      calendar: {
+        getEvents: new GetCalendarEventsUseCase(calendarGateway),
       },
     };
   }

@@ -33,6 +33,8 @@ import { UpdateStepProgressUseCase } from "@/modules/steps/application/use-cases
 import { DeleteStepUseCase } from "@/modules/steps/application/use-cases/delete-step.use-case";
 import { RestoreStepUseCase } from "@/modules/steps/application/use-cases/restore-step.use-case";
 import { ReorderStepUseCase } from "@/modules/steps/application/use-cases/reorder-step.use-case";
+import { HttpCalendarGateway } from "@/modules/calendar/infrastructure/http-calendar.gateway";
+import { GetCalendarEventsUseCase } from "@/modules/calendar/application/use-cases/get-calendar-events.use-case";
 import { createServerClient } from "@/shared/infrastructure/api/server-client";
 
 export interface AuthUseCases {
@@ -69,6 +71,10 @@ export interface DashboardUseCases {
   getActivity: GetActivityUseCase;
 }
 
+export interface CalendarUseCases {
+  getEvents: GetCalendarEventsUseCase;
+}
+
 export interface StepUseCases {
   list: ListStepsUseCase;
   create: CreateStepUseCase;
@@ -85,6 +91,7 @@ export interface ServerContainer {
   goals: GoalUseCases;
   steps: StepUseCases;
   dashboard: DashboardUseCases;
+  calendar: CalendarUseCases;
   health: { check: () => Promise<{ ok: boolean; timestamp: string }> };
 }
 
@@ -99,6 +106,7 @@ export async function serverContainer(): Promise<ServerContainer> {
   const goalGateway = new HttpGoalGateway(httpClient);
   const stepGateway = new HttpStepGateway(httpClient);
   const dashboardGateway = new HttpDashboardGateway(httpClient);
+  const calendarGateway = new HttpCalendarGateway(httpClient);
 
   return {
     auth: {
@@ -139,6 +147,9 @@ export async function serverContainer(): Promise<ServerContainer> {
       getTimeline: new GetTimelineUseCase(dashboardGateway),
       getUpcoming: new GetUpcomingUseCase(dashboardGateway),
       getActivity: new GetActivityUseCase(dashboardGateway),
+    },
+    calendar: {
+      getEvents: new GetCalendarEventsUseCase(calendarGateway),
     },
     health: {
       check: async () => ({ ok: true, timestamp: new Date().toISOString() }),
