@@ -9,6 +9,9 @@ import type { CategoryOption } from "@/modules/goals/domain/entities/goal";
 import type { GoalFormValues } from "../schemas/goal.schema";
 import { GoalFormSheet } from "./GoalFormSheet";
 import { DASH_PALETTES, type DashPalette } from "@/shared/presentation/palette";
+import { StepList } from "@/modules/steps";
+import type { Step } from "@/modules/steps";
+import type { CreateStepFormValues } from "@/modules/steps/presentation/schemas/step.schema";
 
 const TYPE_LABEL: Record<string, string> = {
   CONCLUSIVE: "Conclusiva",
@@ -22,30 +25,43 @@ const STATUS_LABEL: Record<string, string> = {
   ARCHIVED: "Archivada",
 };
 
-const STEP_TYPE_LEGEND = [
-  { key: "barra", label: "barra", desc: "numérico → meta", colorKey: "primary" },
-  { key: "check", label: "check", desc: "hecho o no", colorKey: "lime" },
-  { key: "estados", label: "estados", desc: "múltiples niveles", colorKey: "magenta" },
-  { key: "contador", label: "contador", desc: "sumar / restar", colorKey: "yellow" },
-] as const;
-
 interface GoalDetailScreenProps {
   goal: Goal;
   instances: GoalInstance[];
+  initialSteps: Step[];
   categories: CategoryOption[];
   updateAction: (
     id: string,
     values: GoalFormValues,
   ) => Promise<{ ok: boolean; message?: string }>;
   deleteAction: (id: string) => Promise<{ ok: boolean; message?: string }>;
+  createStepAction: (
+    goalInstanceId: string,
+    values: CreateStepFormValues,
+    order: number,
+  ) => Promise<{ ok: boolean; step?: Step; message?: string }>;
+  updateStepProgressAction: (
+    stepId: string,
+    payload: { current?: number; done?: boolean; currentStatusId?: string },
+  ) => Promise<{ ok: boolean; message?: string }>;
+  reorderStepAction: (
+    stepId: string,
+    newOrder: number,
+  ) => Promise<{ ok: boolean; message?: string }>;
+  deleteStepAction: (stepId: string) => Promise<{ ok: boolean; message?: string }>;
 }
 
 export function GoalDetailScreen({
   goal,
   instances,
+  initialSteps,
   categories,
   updateAction,
   deleteAction,
+  createStepAction,
+  updateStepProgressAction,
+  reorderStepAction,
+  deleteStepAction,
 }: GoalDetailScreenProps) {
   const router = useRouter();
   const { resolvedTheme } = useTheme();
@@ -429,147 +445,39 @@ export function GoalDetailScreen({
         ))}
       </div>
 
-      {/* Tab: Pasos (placeholder — full implementation in Phase 4) */}
+      {/* Tab: Pasos */}
       {tab === "steps" && (
         <div>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "baseline",
-              marginBottom: 14,
-            }}
-          >
-            <div>
-              <div
-                style={{
-                  fontFamily: '"JetBrains Mono", monospace',
-                  fontSize: 10,
-                  color: palette.inkDim,
-                  letterSpacing: "0.16em",
-                  textTransform: "uppercase",
-                  marginBottom: 4,
-                }}
-              >
-                pasos · arrástralos para reordenar
-              </div>
-              <div
-                style={{
-                  fontFamily: '"Space Grotesk", system-ui, sans-serif',
-                  fontSize: 18,
-                  fontWeight: 700,
-                  letterSpacing: "-0.015em",
-                }}
-              >
-                4 tipos de paso, todos editables
-              </div>
-            </div>
-            <button
+          {instance ? (
+            <StepList
+              initialSteps={initialSteps}
+              goalInstanceId={instance.id}
+              accentColor={palette.primary}
+              palette={palette}
+              createAction={createStepAction}
+              updateProgressAction={updateStepProgressAction}
+              reorderAction={reorderStepAction}
+              deleteAction={deleteStepAction}
+            />
+          ) : (
+            <div
               style={{
-                background: palette.line,
-                color: palette.bg,
-                border: "none",
-                padding: "8px 14px",
-                cursor: "pointer",
-                fontFamily: '"Space Grotesk", system-ui, sans-serif',
-                fontSize: 13,
-                fontWeight: 700,
-                letterSpacing: "-0.005em",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                boxShadow: `3px 3px 0 0 ${palette.primary}`,
+                padding: "40px 24px",
+                border: `1.5px dashed ${palette.lineSoft}`,
+                textAlign: "center",
+                color: palette.inkDim,
+                fontFamily: '"JetBrains Mono", monospace',
+                fontSize: 12,
+                letterSpacing: "0.04em",
               }}
             >
-              + Añadir paso
-            </button>
-          </div>
-
-          {/* Step type legend */}
-          <div
-            style={{
-              display: "flex",
-              gap: 6,
-              marginBottom: 14,
-              flexWrap: "wrap",
-              fontFamily: '"JetBrains Mono", monospace',
-              fontSize: 10,
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-            }}
-          >
-            {STEP_TYPE_LEGEND.map(({ key, label, desc, colorKey }) => (
-              <span
-                key={key}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 8,
-                  padding: "4px 8px",
-                  border: `1px solid ${palette.lineSoft}`,
-                  color: palette.inkDim,
-                }}
-              >
-                <span
-                  style={{
-                    width: 8,
-                    height: 8,
-                    background: palette[colorKey as keyof DashPalette] as string,
-                  }}
-                />
-                {label}
-                <span
-                  style={{
-                    opacity: 0.6,
-                    textTransform: "lowercase",
-                    letterSpacing: "0.02em",
-                  }}
-                >
-                  · {desc}
-                </span>
+              Esta meta no tiene una instancia activa.
+              <br />
+              <span style={{ opacity: 0.6 }}>
+                Los pasos se muestran por instancia.
               </span>
-            ))}
-          </div>
-
-          {/* placeholder */}
-          <div
-            style={{
-              padding: "40px 24px",
-              border: `1.5px dashed ${palette.lineSoft}`,
-              textAlign: "center",
-              color: palette.inkDim,
-              fontFamily: '"JetBrains Mono", monospace',
-              fontSize: 12,
-              letterSpacing: "0.04em",
-            }}
-          >
-            Los pasos se implementan en la Fase 4.
-            <br />
-            <span style={{ opacity: 0.6 }}>
-              Arrastra, edita y registra progreso aquí.
-            </span>
-          </div>
-
-          <button
-            style={{
-              marginTop: 14,
-              width: "100%",
-              padding: "14px 16px",
-              border: `1.5px dashed ${palette.lineSoft}`,
-              background: "transparent",
-              color: palette.inkDim,
-              cursor: "pointer",
-              fontFamily: '"Space Grotesk", system-ui, sans-serif',
-              fontSize: 13,
-              fontWeight: 600,
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 8,
-            }}
-          >
-            <span style={{ fontSize: 16 }}>+</span> Añadir otro paso
-          </button>
+            </div>
+          )}
         </div>
       )}
 
