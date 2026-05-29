@@ -49,7 +49,7 @@ export function UserMenu() {
         onClick={() => setOpen((o) => !o)}
         className={cn(
           "flex items-center gap-2 px-2 py-1.5 rounded-[--ag-radius-md]",
-          "hover:bg-[--ag-surface-hover] transition-colors",
+          "hover:bg-ag-surface-hover transition-colors",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[--ag-ring]",
         )}
         aria-expanded={open}
@@ -58,12 +58,12 @@ export function UserMenu() {
         <span
           className={cn(
             "h-7 w-7 rounded-[--ag-radius-full] flex items-center justify-center",
-            "bg-[--ag-primary] text-[--ag-primary-fg] text-xs font-mono font-semibold",
+            "bg-ag-primary text-ag-primary-fg text-xs font-mono font-semibold",
           )}
         >
           {initials}
         </span>
-        <span className="text-sm font-mono text-[--ag-fg] hidden sm:block max-w-[120px] truncate">
+        <span className="text-sm font-mono text-ag-fg hidden sm:block max-w-[120px] truncate">
           {user?.name ?? "Usuario"}
         </span>
       </button>
@@ -71,18 +71,18 @@ export function UserMenu() {
       {open && (
         <div
           className={cn(
-            "absolute bottom-full left-0 mb-2 w-48",
-            "rounded-[--ag-radius-lg] bg-[--ag-surface] border border-[--ag-border]",
-            "shadow-[--ag-shadow-lg] animate-[vibe-pop_0.2s_ease-out]",
+            "absolute top-full right-0 mt-2 w-48 z-50",
+            "rounded-[--ag-radius-lg] bg-ag-surface border border-ag-border",
+            "shadow-lg animate-[vibe-pop_0.2s_ease-out]",
             "overflow-hidden",
           )}
           role="menu"
         >
-          <div className="px-4 py-3 border-b border-[--ag-border]">
-            <p className="text-xs font-mono font-medium text-[--ag-fg] truncate">
+          <div className="px-4 py-3 border-b border-ag-border">
+            <p className="text-xs font-mono font-medium text-ag-fg truncate">
               {user?.name ?? "Usuario"}
             </p>
-            <p className="text-xs font-mono text-[--ag-fg-subtle] truncate">
+            <p className="text-xs font-mono text-ag-fg-subtle truncate">
               {user?.email ?? ""}
             </p>
           </div>
@@ -92,8 +92,8 @@ export function UserMenu() {
               role="menuitem"
               className={cn(
                 "flex items-center gap-2.5 w-full px-4 py-2.5",
-                "text-sm font-mono text-[--ag-error]",
-                "hover:bg-[--ag-error-bg] transition-colors",
+                "text-sm font-mono text-ag-error",
+                "hover:bg-ag-error-bg transition-colors",
               )}
             >
               <LogOut size={14} />
