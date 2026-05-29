@@ -12,6 +12,7 @@ import { DASH_PALETTES, type DashPalette } from "@/shared/presentation/palette";
 import { StepList } from "@/modules/steps";
 import type { Step } from "@/modules/steps";
 import type { CreateStepFormValues } from "@/modules/steps/presentation/schemas/step.schema";
+import { clientContainer } from "@/shared/composition/client-container";
 
 const TYPE_LABEL: Record<string, string> = {
   CONCLUSIVE: "Conclusiva",
@@ -42,17 +43,22 @@ interface GoalDetailScreenProps {
   ) => Promise<{ ok: boolean; step?: Step; message?: string }>;
   updateStepProgressAction: (
     stepId: string,
+    goalId: string,
     payload: { current?: number; done?: boolean; currentStatusId?: string },
   ) => Promise<{ ok: boolean; message?: string }>;
   reorderStepAction: (
     stepId: string,
+    goalId: string,
     newOrder: number,
   ) => Promise<{ ok: boolean; message?: string }>;
-  deleteStepAction: (stepId: string) => Promise<{ ok: boolean; message?: string }>;
+  deleteStepAction: (
+    stepId: string,
+    goalId: string,
+  ) => Promise<{ ok: boolean; message?: string }>;
 }
 
 export function GoalDetailScreen({
-  goal,
+  goal: initialGoal,
   instances,
   initialSteps,
   categories,
@@ -73,6 +79,11 @@ export function GoalDetailScreen({
       ? DASH_PALETTES.dark
       : DASH_PALETTES.light;
 
+  const [goal, setGoal] = React.useState(initialGoal);
+  React.useEffect(() => {
+    setGoal(initialGoal);
+  }, [initialGoal]);
+
   const [tab, setTab] = React.useState<"steps" | "history" | "settings">(
     "steps",
   );
@@ -87,6 +98,12 @@ export function GoalDetailScreen({
     const result = await updateAction(goal.id, values);
     if (result.ok) {
       setEditing(false);
+      try {
+        const updated = await clientContainer().goals.get.execute(goal.id);
+        setGoal(updated);
+      } catch {
+        /* keep current view on fetch failure */
+      }
       router.refresh();
     }
     return result;
@@ -455,9 +472,13 @@ export function GoalDetailScreen({
               accentColor={palette.primary}
               palette={palette}
               createAction={createStepAction}
-              updateProgressAction={updateStepProgressAction}
-              reorderAction={reorderStepAction}
-              deleteAction={deleteStepAction}
+              updateProgressAction={(stepId, payload) =>
+                updateStepProgressAction(stepId, goal.id, payload)
+              }
+              reorderAction={(stepId, newOrder) =>
+                reorderStepAction(stepId, goal.id, newOrder)
+              }
+              deleteAction={(stepId) => deleteStepAction(stepId, goal.id)}
             />
           ) : (
             <div
