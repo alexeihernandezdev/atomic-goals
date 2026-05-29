@@ -5,6 +5,13 @@ import { RegisterUseCase } from "@/modules/auth/application/use-cases/register.u
 import { LogoutUseCase } from "@/modules/auth/application/use-cases/logout.use-case";
 import { RefreshSessionUseCase } from "@/modules/auth/application/use-cases/refresh-session.use-case";
 import { GetCurrentUserUseCase } from "@/modules/auth/application/use-cases/get-current-user.use-case";
+import { HttpCategoryGateway } from "@/modules/categories/infrastructure/http-category.gateway";
+import { ListCategoriesUseCase } from "@/modules/categories/application/use-cases/list-categories.use-case";
+import { GetCategoryUseCase } from "@/modules/categories/application/use-cases/get-category.use-case";
+import { CreateCategoryUseCase } from "@/modules/categories/application/use-cases/create-category.use-case";
+import { UpdateCategoryUseCase } from "@/modules/categories/application/use-cases/update-category.use-case";
+import { DeleteCategoryUseCase } from "@/modules/categories/application/use-cases/delete-category.use-case";
+import { RestoreCategoryUseCase } from "@/modules/categories/application/use-cases/restore-category.use-case";
 import { createServerClient } from "@/shared/infrastructure/api/server-client";
 
 export interface AuthUseCases {
@@ -15,20 +22,29 @@ export interface AuthUseCases {
   getCurrentUser: GetCurrentUserUseCase;
 }
 
+export interface CategoryUseCases {
+  list: ListCategoriesUseCase;
+  get: GetCategoryUseCase;
+  create: CreateCategoryUseCase;
+  update: UpdateCategoryUseCase;
+  delete: DeleteCategoryUseCase;
+  restore: RestoreCategoryUseCase;
+}
+
 export interface ServerContainer {
   auth: AuthUseCases;
+  categories: CategoryUseCases;
   health: { check: () => Promise<{ ok: boolean; timestamp: string }> };
-  // categories: CategoryUseCases — Phase 2
-  // goals:      GoalUseCases     — Phase 3
-  // steps:      StepUseCases     — Phase 4
-  // dashboard:  DashboardUseCases — Phase 5
 }
 
 export async function serverContainer(): Promise<ServerContainer> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const httpClient = (await createServerClient()) as any;
+
   const authGateway = new HttpAuthGateway(httpClient);
   const sessionGateway = new NextCookieSessionGateway();
+
+  const categoryGateway = new HttpCategoryGateway(httpClient);
 
   return {
     auth: {
@@ -37,6 +53,14 @@ export async function serverContainer(): Promise<ServerContainer> {
       logout: new LogoutUseCase(authGateway, sessionGateway),
       refreshSession: new RefreshSessionUseCase(authGateway, sessionGateway),
       getCurrentUser: new GetCurrentUserUseCase(authGateway, sessionGateway),
+    },
+    categories: {
+      list: new ListCategoriesUseCase(categoryGateway),
+      get: new GetCategoryUseCase(categoryGateway),
+      create: new CreateCategoryUseCase(categoryGateway),
+      update: new UpdateCategoryUseCase(categoryGateway),
+      delete: new DeleteCategoryUseCase(categoryGateway),
+      restore: new RestoreCategoryUseCase(categoryGateway),
     },
     health: {
       check: async () => ({ ok: true, timestamp: new Date().toISOString() }),

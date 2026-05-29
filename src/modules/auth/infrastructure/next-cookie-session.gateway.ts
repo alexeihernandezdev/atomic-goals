@@ -11,7 +11,7 @@ export class NextCookieSessionGateway implements SessionGateway {
     return store.get(ACCESS_TOKEN_COOKIE)?.value ?? null;
   }
 
-  async setSession(accessToken: string, _user: User): Promise<void> {
+  async setSession(accessToken: string, _user?: User): Promise<void> {
     const { cookies } = await import("next/headers");
     const store = await cookies();
     store.set(ACCESS_TOKEN_COOKIE, accessToken, {
