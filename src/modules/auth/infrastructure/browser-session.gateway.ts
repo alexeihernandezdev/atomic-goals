@@ -11,7 +11,7 @@ export class BrowserSessionGateway implements SessionGateway {
     return sessionStorage.getItem(TOKEN_KEY);
   }
 
-  async setSession(accessToken: string, _user?: User): Promise<void> {
+  async setSession(accessToken: string, _user?: User, _refreshToken?: string): Promise<void> {
     if (typeof window === "undefined") return;
     sessionStorage.setItem(TOKEN_KEY, accessToken);
   }

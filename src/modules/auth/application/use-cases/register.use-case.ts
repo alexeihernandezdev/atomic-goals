@@ -10,7 +10,7 @@ export class RegisterUseCase {
 
   async execute(command: RegisterCommand): Promise<AuthResult> {
     const result = await this.authGateway.register(command);
-    await this.sessionGateway.setSession(result.accessToken, result.user);
+    await this.sessionGateway.setSession(result.accessToken, result.user, result.refreshToken);
     return result;
   }
 }
