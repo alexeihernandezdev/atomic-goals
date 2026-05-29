@@ -12,6 +12,14 @@ import { CreateCategoryUseCase } from "@/modules/categories/application/use-case
 import { UpdateCategoryUseCase } from "@/modules/categories/application/use-cases/update-category.use-case";
 import { DeleteCategoryUseCase } from "@/modules/categories/application/use-cases/delete-category.use-case";
 import { RestoreCategoryUseCase } from "@/modules/categories/application/use-cases/restore-category.use-case";
+import { HttpGoalGateway } from "@/modules/goals/infrastructure/http-goal.gateway";
+import { ListGoalsUseCase } from "@/modules/goals/application/use-cases/list-goals.use-case";
+import { GetGoalUseCase } from "@/modules/goals/application/use-cases/get-goal.use-case";
+import { CreateGoalUseCase } from "@/modules/goals/application/use-cases/create-goal.use-case";
+import { UpdateGoalUseCase } from "@/modules/goals/application/use-cases/update-goal.use-case";
+import { DeleteGoalUseCase } from "@/modules/goals/application/use-cases/delete-goal.use-case";
+import { RestoreGoalUseCase } from "@/modules/goals/application/use-cases/restore-goal.use-case";
+import { ListGoalInstancesUseCase } from "@/modules/goals/application/use-cases/list-goal-instances.use-case";
 import { createServerClient } from "@/shared/infrastructure/api/server-client";
 
 export interface AuthUseCases {
@@ -31,9 +39,20 @@ export interface CategoryUseCases {
   restore: RestoreCategoryUseCase;
 }
 
+export interface GoalUseCases {
+  list: ListGoalsUseCase;
+  get: GetGoalUseCase;
+  create: CreateGoalUseCase;
+  update: UpdateGoalUseCase;
+  delete: DeleteGoalUseCase;
+  restore: RestoreGoalUseCase;
+  listInstances: ListGoalInstancesUseCase;
+}
+
 export interface ServerContainer {
   auth: AuthUseCases;
   categories: CategoryUseCases;
+  goals: GoalUseCases;
   health: { check: () => Promise<{ ok: boolean; timestamp: string }> };
 }
 
@@ -45,6 +64,7 @@ export async function serverContainer(): Promise<ServerContainer> {
   const sessionGateway = new NextCookieSessionGateway();
 
   const categoryGateway = new HttpCategoryGateway(httpClient);
+  const goalGateway = new HttpGoalGateway(httpClient);
 
   return {
     auth: {
@@ -61,6 +81,15 @@ export async function serverContainer(): Promise<ServerContainer> {
       update: new UpdateCategoryUseCase(categoryGateway),
       delete: new DeleteCategoryUseCase(categoryGateway),
       restore: new RestoreCategoryUseCase(categoryGateway),
+    },
+    goals: {
+      list: new ListGoalsUseCase(goalGateway),
+      get: new GetGoalUseCase(goalGateway),
+      create: new CreateGoalUseCase(goalGateway),
+      update: new UpdateGoalUseCase(goalGateway),
+      delete: new DeleteGoalUseCase(goalGateway),
+      restore: new RestoreGoalUseCase(goalGateway),
+      listInstances: new ListGoalInstancesUseCase(goalGateway),
     },
     health: {
       check: async () => ({ ok: true, timestamp: new Date().toISOString() }),

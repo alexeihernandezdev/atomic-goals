@@ -12,6 +12,12 @@ import { GetCategoryUseCase } from "@/modules/categories/application/use-cases/g
 import { CreateCategoryUseCase } from "@/modules/categories/application/use-cases/create-category.use-case";
 import { UpdateCategoryUseCase } from "@/modules/categories/application/use-cases/update-category.use-case";
 import { DeleteCategoryUseCase } from "@/modules/categories/application/use-cases/delete-category.use-case";
+import { HttpGoalGateway } from "@/modules/goals/infrastructure/http-goal.gateway";
+import { ListGoalsUseCase } from "@/modules/goals/application/use-cases/list-goals.use-case";
+import { GetGoalUseCase } from "@/modules/goals/application/use-cases/get-goal.use-case";
+import { CreateGoalUseCase } from "@/modules/goals/application/use-cases/create-goal.use-case";
+import { UpdateGoalUseCase } from "@/modules/goals/application/use-cases/update-goal.use-case";
+import { DeleteGoalUseCase } from "@/modules/goals/application/use-cases/delete-goal.use-case";
 import { apiClient } from "@/shared/infrastructure/api/openapi-client";
 
 export interface AuthUseCases {
@@ -29,9 +35,18 @@ export interface CategoryUseCases {
   delete: DeleteCategoryUseCase;
 }
 
+export interface GoalUseCases {
+  list: ListGoalsUseCase;
+  get: GetGoalUseCase;
+  create: CreateGoalUseCase;
+  update: UpdateGoalUseCase;
+  delete: DeleteGoalUseCase;
+}
+
 export interface ClientContainer {
   auth: AuthUseCases;
   categories: CategoryUseCases;
+  goals: GoalUseCases;
 }
 
 let _container: ClientContainer | null = null;
@@ -43,6 +58,7 @@ export function clientContainer(): ClientContainer {
     const authGateway = new HttpAuthGateway(client);
     const sessionGateway = new BrowserSessionGateway();
     const categoryGateway = new HttpCategoryGateway(client);
+    const goalGateway = new HttpGoalGateway(client);
 
     _container = {
       auth: {
@@ -57,6 +73,13 @@ export function clientContainer(): ClientContainer {
         create: new CreateCategoryUseCase(categoryGateway),
         update: new UpdateCategoryUseCase(categoryGateway),
         delete: new DeleteCategoryUseCase(categoryGateway),
+      },
+      goals: {
+        list: new ListGoalsUseCase(goalGateway),
+        get: new GetGoalUseCase(goalGateway),
+        create: new CreateGoalUseCase(goalGateway),
+        update: new UpdateGoalUseCase(goalGateway),
+        delete: new DeleteGoalUseCase(goalGateway),
       },
     };
   }

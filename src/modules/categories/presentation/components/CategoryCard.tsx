@@ -4,7 +4,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import type { Category } from "@/modules/categories/domain/entities/category";
 import { CatIcon } from "./CatIcon";
-import type { DashPalette } from "./palette";
+import type { DashPalette } from "@/shared/presentation/palette";
 
 function deterministicSpark(seedStr: string): number[] {
   let s = 0;
