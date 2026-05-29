@@ -20,6 +20,11 @@ import { UpdateGoalUseCase } from "@/modules/goals/application/use-cases/update-
 import { DeleteGoalUseCase } from "@/modules/goals/application/use-cases/delete-goal.use-case";
 import { RestoreGoalUseCase } from "@/modules/goals/application/use-cases/restore-goal.use-case";
 import { ListGoalInstancesUseCase } from "@/modules/goals/application/use-cases/list-goal-instances.use-case";
+import { HttpDashboardGateway } from "@/modules/dashboard/infrastructure/http-dashboard.gateway";
+import { GetSummaryUseCase } from "@/modules/dashboard/application/use-cases/get-summary.use-case";
+import { GetTimelineUseCase } from "@/modules/dashboard/application/use-cases/get-timeline.use-case";
+import { GetUpcomingUseCase } from "@/modules/dashboard/application/use-cases/get-upcoming.use-case";
+import { GetActivityUseCase } from "@/modules/dashboard/application/use-cases/get-activity.use-case";
 import { HttpStepGateway } from "@/modules/steps/infrastructure/http-step.gateway";
 import { ListStepsUseCase } from "@/modules/steps/application/use-cases/list-steps.use-case";
 import { CreateStepUseCase } from "@/modules/steps/application/use-cases/create-step.use-case";
@@ -57,6 +62,13 @@ export interface GoalUseCases {
   listInstances: ListGoalInstancesUseCase;
 }
 
+export interface DashboardUseCases {
+  getSummary: GetSummaryUseCase;
+  getTimeline: GetTimelineUseCase;
+  getUpcoming: GetUpcomingUseCase;
+  getActivity: GetActivityUseCase;
+}
+
 export interface StepUseCases {
   list: ListStepsUseCase;
   create: CreateStepUseCase;
@@ -72,6 +84,7 @@ export interface ServerContainer {
   categories: CategoryUseCases;
   goals: GoalUseCases;
   steps: StepUseCases;
+  dashboard: DashboardUseCases;
   health: { check: () => Promise<{ ok: boolean; timestamp: string }> };
 }
 
@@ -85,6 +98,7 @@ export async function serverContainer(): Promise<ServerContainer> {
   const categoryGateway = new HttpCategoryGateway(httpClient);
   const goalGateway = new HttpGoalGateway(httpClient);
   const stepGateway = new HttpStepGateway(httpClient);
+  const dashboardGateway = new HttpDashboardGateway(httpClient);
 
   return {
     auth: {
@@ -119,6 +133,12 @@ export async function serverContainer(): Promise<ServerContainer> {
       delete: new DeleteStepUseCase(stepGateway),
       restore: new RestoreStepUseCase(stepGateway),
       reorder: new ReorderStepUseCase(stepGateway),
+    },
+    dashboard: {
+      getSummary: new GetSummaryUseCase(dashboardGateway),
+      getTimeline: new GetTimelineUseCase(dashboardGateway),
+      getUpcoming: new GetUpcomingUseCase(dashboardGateway),
+      getActivity: new GetActivityUseCase(dashboardGateway),
     },
     health: {
       check: async () => ({ ok: true, timestamp: new Date().toISOString() }),
