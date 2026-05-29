@@ -1,0 +1,238 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   Atomic Goals — Design Tokens
+   Lenguaje visual: "Vibrante / graphic / color blocks"
+   Fuente de verdad: htmls/B _ Vibrante _graphic_ color blocks_.html
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Light theme (default) ─────────────────────────────────────────────── */
+:root {
+  /* Backgrounds */
+  --ag-bg: #f4f4ef;
+  --ag-bg-subtle: #ebebе5;
+  --ag-surface: #ffffff;
+  --ag-surface-hover: #f0f0ea;
+  --ag-overlay: rgba(244, 244, 239, 0.85);
+
+  /* Foregrounds */
+  --ag-fg: #0e0e0e;
+  --ag-fg-muted: #5f5f5f;
+  --ag-fg-subtle: #9d9d9d;
+  --ag-fg-inverse: #f4f4ef;
+
+  /* Brand / Primary — violet */
+  --ag-primary: #7c5cff;
+  --ag-primary-hover: #6a47f5;
+  --ag-primary-fg: #ffffff;
+
+  /* Accents — "color blocks" palette */
+  --ag-lime: #c8ff1f;
+  --ag-lime-fg: #0e0e0e;
+  --ag-amber: #ffb400;
+  --ag-amber-fg: #0e0e0e;
+  --ag-pink: #ff3d6e;
+  --ag-pink-fg: #ffffff;
+  --ag-blue: #2e5bff;
+  --ag-blue-fg: #ffffff;
+  --ag-crimson: #e11d48;
+  --ag-crimson-fg: #ffffff;
+
+  /* Semantic */
+  --ag-success: #16a34a;
+  --ag-success-bg: #dcfce7;
+  --ag-warning: #d97706;
+  --ag-warning-bg: #fef3c7;
+  --ag-error: #dc2626;
+  --ag-error-bg: #fee2e2;
+  --ag-info: #2e5bff;
+  --ag-info-bg: #dbeafe;
+
+  /* Borders */
+  --ag-border: rgba(14, 14, 14, 0.12);
+  --ag-border-strong: rgba(14, 14, 14, 0.3);
+  --ag-ring: #7c5cff;
+
+  /* Radius */
+  --ag-radius-xs: 2px;
+  --ag-radius-sm: 4px;
+  --ag-radius-md: 8px;
+  --ag-radius-lg: 12px;
+  --ag-radius-xl: 16px;
+  --ag-radius-2xl: 24px;
+  --ag-radius-full: 9999px;
+
+  /* Shadows */
+  --ag-shadow-sm:
+    0 1px 2px rgba(14, 14, 14, 0.06), 0 1px 3px rgba(14, 14, 14, 0.1);
+  --ag-shadow-md:
+    0 4px 6px rgba(14, 14, 14, 0.07), 0 2px 4px rgba(14, 14, 14, 0.06);
+  --ag-shadow-lg:
+    0 10px 15px rgba(14, 14, 14, 0.08), 0 4px 6px rgba(14, 14, 14, 0.05);
+  --ag-shadow-xl:
+    0 20px 25px rgba(14, 14, 14, 0.09), 0 8px 10px rgba(14, 14, 14, 0.04);
+
+  /* Typography */
+  --ag-font-mono: var(
+    --font-jetbrains-mono,
+    "JetBrains Mono",
+    "Fira Code",
+    ui-monospace,
+    monospace
+  );
+  --ag-font-sans: var(
+    --font-space-grotesk,
+    "Space Grotesk",
+    "Inter",
+    ui-sans-serif,
+    system-ui,
+    sans-serif
+  );
+
+  /* Font sizes (rem) */
+  --ag-text-xs: 0.75rem; /* 12px */
+  --ag-text-sm: 0.875rem; /* 14px */
+  --ag-text-base: 1rem; /* 16px */
+  --ag-text-lg: 1.125rem; /* 18px */
+  --ag-text-xl: 1.25rem; /* 20px */
+  --ag-text-2xl: 1.5rem; /* 24px */
+  --ag-text-3xl: 1.875rem; /* 30px */
+  --ag-text-4xl: 2.25rem; /* 36px */
+  --ag-text-5xl: 3rem; /* 48px */
+  --ag-text-6xl: 3.75rem; /* 60px */
+
+  /* Letter spacing */
+  --ag-tracking-tight: -0.02em;
+  --ag-tracking-normal: 0em;
+  --ag-tracking-wide: 0.04em;
+  --ag-tracking-wider: 0.08em;
+  --ag-tracking-widest: 0.16em;
+
+  /* Line heights */
+  --ag-leading-none: 1;
+  --ag-leading-tight: 1.2;
+  --ag-leading-snug: 1.375;
+  --ag-leading-normal: 1.5;
+  --ag-leading-relaxed: 1.625;
+
+  /* Spacing scale (subset — use Tailwind for most) */
+  --ag-space-1: 0.25rem;
+  --ag-space-2: 0.5rem;
+  --ag-space-3: 0.75rem;
+  --ag-space-4: 1rem;
+  --ag-space-6: 1.5rem;
+  --ag-space-8: 2rem;
+  --ag-space-12: 3rem;
+  --ag-space-16: 4rem;
+
+  /* Motion easings */
+  --ag-ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ag-ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ag-ease-inout: cubic-bezier(0.4, 0, 0.2, 1);
+  --ag-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Durations */
+  --ag-duration-fast: 100ms;
+  --ag-duration-base: 200ms;
+  --ag-duration-slow: 350ms;
+  --ag-duration-slower: 600ms;
+}
+
+/* ── Dark theme ─────────────────────────────────────────────────────────── */
+.dark {
+  --ag-bg: #0e0e0e;
+  --ag-bg-subtle: #1a1a1a;
+  --ag-surface: #161616;
+  --ag-surface-hover: #222222;
+  --ag-overlay: rgba(14, 14, 14, 0.85);
+
+  --ag-fg: #f4f4ef;
+  --ag-fg-muted: #9d9d9d;
+  --ag-fg-subtle: #5f5f5f;
+  --ag-fg-inverse: #0e0e0e;
+
+  --ag-primary: #9b80ff;
+  --ag-primary-hover: #b09fff;
+  --ag-primary-fg: #0e0e0e;
+
+  --ag-border: rgba(244, 244, 239, 0.12);
+  --ag-border-strong: rgba(244, 244, 239, 0.3);
+  --ag-ring: #9b80ff;
+
+  --ag-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.24);
+  --ag-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.35), 0 2px 4px rgba(0, 0, 0, 0.28);
+  --ag-shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.4), 0 4px 6px rgba(0, 0, 0, 0.32);
+  --ag-shadow-xl:
+    0 20px 25px rgba(0, 0, 0, 0.45), 0 8px 10px rgba(0, 0, 0, 0.36);
+
+  --ag-success-bg: rgba(22, 163, 74, 0.15);
+  --ag-warning-bg: rgba(217, 119, 6, 0.15);
+  --ag-error-bg: rgba(220, 38, 38, 0.15);
+  --ag-info-bg: rgba(46, 91, 255, 0.15);
+}
+
+/* ── Keyframes ──────────────────────────────────────────────────────────── */
+@keyframes vibe-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.2;
+  }
+}
+
+@keyframes vibe-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.06);
+    opacity: 0.85;
+  }
+}
+
+@keyframes vibe-fade {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes vibe-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes vibe-pop {
+  0% {
+    transform: scale(0.92);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.03);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes vibe-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

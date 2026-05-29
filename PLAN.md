@@ -1,7 +1,7 @@
 # Plan Frontend — Atomic Goals Web
 
-Stack: **Next.js 16.2.6 + React 19 + TypeScript + Tailwind v4 + shadcn/ui + Zustand + React Hook Form + Chart.js + OpenAPI-generated client**.
-Arquitectura: **Clean Architecture** (Domain / Application / Infrastructure / Presentation) adaptada a Next.js App Router.
+Stack: **Next.js 16.2.6 + React 19 + TypeScript + Tailwind v4 + shadcn/ui (re-estilizado) + Zustand + React Hook Form + Chart.js + OpenAPI-generated client**.
+Arquitectura: **Screaming + Clean Architecture** — top-level por feature/dominio (`src/modules/<feature>/`), y dentro de cada feature las 4 capas (Domain / Application / Infrastructure / Presentation) con dependencias hacia el dominio. Lo transversal vive en `src/shared/`.
 Repo: `atomic-goals/` (separado, hermano de `atomic-goals-api/`).
 
 > ⚠️ **Next.js 16 tiene breaking changes**. Antes de implementar cada fase, leer la guía relevante en `node_modules/next/dist/docs/`. Este plan asume App Router + Server Components + Server Actions, pero los nombres exactos de APIs deben verificarse contra los docs locales (las APIs y convenciones pueden haber cambiado respecto a Next 15).
@@ -12,59 +12,123 @@ Repo: `atomic-goals/` (separado, hermano de `atomic-goals-api/`).
 
 | Decisión | Valor |
 |---|---|
-| **Arquitectura** | **Clean Architecture** — 4 capas con dependencias unidireccionales hacia el dominio |
-| Router | App Router (`app/`) — Server Components por defecto |
-| Estado servidor | Server Components/Server Actions invocan **use cases**, no la API directamente |
-| Estado cliente | Zustand para UI/efímero (modales, filtros locales, drafts, toasts) |
-| Cliente HTTP | Generado desde Swagger del backend (`openapi-typescript` + `openapi-fetch`) — encapsulado en `infrastructure/api` |
+| **Arquitectura** | **Screaming + Clean Architecture** — el repo grita el dominio (auth, goals, steps, …) al primer nivel; dentro de cada feature, 4 capas con dependencias unidireccionales hacia el dominio |
+| Router | App Router (`app/`) — Server Components por defecto. `app/` es solo entry-points; toda la lógica vive en `src/modules/<feature>/` |
+| Estado servidor | Server Components/Server Actions invocan **use cases** del módulo, no la API directamente |
+| Estado cliente | Zustand para UI/efímero (modales, filtros locales, drafts, toasts) — vive en el módulo dueño o en `shared/presentation/stores` si es global |
+| Cliente HTTP | Generado desde Swagger del backend (`openapi-typescript` + `openapi-fetch`) — encapsulado en `shared/infrastructure/api` |
 | Auth | Access token en memoria (Zustand) + refresh cookie `httpOnly` manejado por el backend |
-| Formularios | React Hook Form + Zod (resolver) — Zod vive en presentation como espejo de invariantes |
-| UI Kit | shadcn/ui (Radix + Tailwind v4); instalación selectiva por componente |
+| Formularios | React Hook Form + Zod (resolver) — schemas Zod en `presentation/schemas` de cada módulo |
+| **UI Kit** | **shadcn/ui (Radix + Tailwind v4) re-estilizado**. shadcn aporta accesibilidad/comportamiento; los estilos los aportamos nosotros. Los HTMLs en `atomic-goals/htmls/` son la **fuente de verdad visual** — se atomizan en `src/shared/ui-kit/` (atoms + molecules) y el resto del código consume **siempre** desde ahí, **nunca** directo de shadcn |
+| **Design system** | Tokens propios en `src/shared/ui-kit/tokens.css` + `app/globals.css` (`@theme inline`). Lenguaje "Vibrante / graphic / color blocks" (JetBrains Mono, bloques de color, animaciones `vibe-blink/pulse/fade`) |
 | Estilos | Tailwind v4 (CSS-first config, `@theme inline`) |
 | Charts | Chart.js + react-chartjs-2 |
 | Calendar | `react-day-picker` (ya viene con shadcn) + vista custom mes/semana |
-| Tablas/listas | Componentes propios con shadcn `<Table>` |
+| Tablas/listas | Componentes propios sobre shadcn `<Table>` (re-estilizado) |
 | Drag & drop | `@dnd-kit/core` para reordenar pasos |
-| Icons | `lucide-react` |
-| Dark mode | `next-themes` |
-| Notificaciones | `sonner` (toasts) |
+| Icons | `lucide-react` (envuelto en `ui-kit/icons` para tamaños/strokes consistentes) |
+| Dark mode | `next-themes` (el ui-kit expone variables CSS que cambian por tema) |
+| Notificaciones | `sonner` (toasts) — envuelto en `ui-kit/molecules/Toast` |
 
-### 1.1 Clean Architecture en el frontend — reglas
+### 1.1 Screaming + Clean — reglas
+
+**Por qué combinarlas**:
+- **Screaming Architecture** (Robert C. Martin): la estructura del proyecto debe **gritar el dominio** (auth, goals, steps, categories, dashboard, …), no el framework (controllers, services, pages). Abrir el repo debe contar de qué va la app antes que cómo está implementada.
+- **Clean Architecture**: dentro de cada feature, las dependencias fluyen siempre hacia el dominio. Las capas externas dependen de las internas, nunca al revés.
+
+**Resultado** — cada feature es un mini-Clean autocontenido:
 
 ```
-Presentation (app/, components/) ──► Application (use cases) ──► Domain (entities, types)
-Infrastructure (api client, storage, auth) ─────────────────────► Domain
-Infrastructure ──► Application (implementa puertos / gateways)
+src/modules/<feature>/
+├── domain/          # entidades, value objects y errores propios del feature
+├── application/     # use-cases + gateways (puertos)
+├── infrastructure/  # implementación HTTP de los gateways + mappers OpenAPI → dominio
+└── presentation/    # componentes, hooks, stores, schemas Zod, mappers form→command
 ```
 
-- **Domain (`src/core/`)**: tipos puros del dominio (no son los tipos generados de OpenAPI), value objects, errores. No depende de React, Next, fetch, ni librerías externas.
-- **Application (`src/core/application/`)**: casos de uso del cliente (`CreateGoalUseCase`, `RecalculateLocalProgressUseCase` para UI optimista, etc.) y **gateways** (interfaces) que necesita: `GoalGateway`, `AuthGateway`, `StorageGateway`.
-- **Infrastructure (`src/infrastructure/`)**: implementa los gateways. `HttpGoalGateway` usa el cliente OpenAPI. `BrowserStorageGateway` usa localStorage. `NextCookieAuthGateway` usa `cookies()` de Next. **Aquí se hace el mapping** entre los tipos OpenAPI (`schema.d.ts`) y las entidades de dominio.
-- **Presentation (`app/`, `components/`)**: páginas, componentes, Server Actions, hooks. Invocan use cases vía un **composition root** (`src/composition/`). Nunca llaman al cliente HTTP directamente.
-- **Composition Root**: `src/composition/container.ts` instancia gateways y use cases. Hay dos containers:
-  - `server-container.ts` para Server Components/Actions (usa cookies del request).
-  - `client-container.ts` para Client Components (usa cookies via document/fetch).
+Flujo de dependencias dentro de un módulo (idéntico a Clean):
+
+```
+presentation ──► application ──► domain
+infrastructure ──► domain  + implementa puertos de application
+```
+
+- **Domain** (`<feature>/domain/`): tipos puros, VO, errores propios del feature. No conoce React, Next, fetch, ni librerías externas.
+- **Application** (`<feature>/application/`): use-cases (`CreateGoalUseCase`, `UpdateStepProgressUseCase`, …) y **gateways** (interfaces): `GoalGateway`, `StepGateway`, `AuthGateway`, etc.
+- **Infrastructure** (`<feature>/infrastructure/`): implementa los gateways del feature. `HttpGoalGateway` usa el cliente OpenAPI compartido. Aquí vive el **mapping** OpenAPI (`schema.d.ts`) ↔ entidades de dominio.
+- **Presentation** (`<feature>/presentation/`): componentes, hooks, Zustand stores propios del feature, Zod schemas, mappers form→command. Invoca use-cases vía el **composition root**; nunca llama al cliente HTTP directamente.
+
+**Cross-cutting** — lo que pertenece a más de un feature vive en `src/shared/` con la misma estructura por capas: `domain/` (errores base, VO compartidos), `application/` (puertos cross-feature si surgen), `infrastructure/` (cliente OpenAPI, storage), `presentation/` (layout `AppShell`, ui-kit, hooks/utilidades), `composition/` (containers).
+
+**Aislamiento entre módulos**: un módulo **nunca** importa de otro módulo (`modules/goals/...` no importa de `modules/steps/...`). Si dos módulos necesitan colaborar, una de tres:
+1. Mover lo compartido a `src/shared/`.
+2. Exponer un barrel `index.ts` del módulo (solo tipos del dominio o use-cases públicos) y consumirlo explícitamente.
+3. Componer en el `composition` (caso típico: un use-case agregador en un módulo "host").
+
+**Composition Root** (`src/shared/composition/`):
+- `server-container.ts` para Server Components/Actions (usa cookies del request).
+- `client-container.ts` para Client Components.
+- Instancia gateways de cada módulo y resuelve use-cases. Es el **único** lugar que toca infrastructure de varios módulos a la vez.
+
+**Routing en Next.js (`app/`)** es solo presentation entry-points: páginas y Server Actions delegan en `modules/<feature>/presentation/components` y en use-cases vía `serverContainer`. `app/` nunca contiene lógica de negocio.
+
+### 1.2 UI Kit propio, shadcn re-estilizado y atomización de los HTMLs
+
+**Decisión**: shadcn se queda, **pero no con su look-and-feel por defecto**. Los HTMLs en `atomic-goals/htmls/` son la fuente de verdad visual. shadcn aporta:
+- Accesibilidad (Radix Primitives).
+- Comportamiento (focus management, ARIA, navegación por teclado).
+- Tipado y estructura para componer.
+
+Lo que **cambiamos** de shadcn: colores, radios, sombras, espaciado, tipografía, microinteracciones y animaciones para coincidir con el lenguaje "Vibrante / graphic / color blocks" (JetBrains Mono, bloques de color, keyframes `vibe-blink/pulse/fade`, etc.).
+
+**Estrategia de atomización (Atomic Design lite)** para cada HTML en `htmls/`:
+
+1. **Identificar átomos y moléculas** reutilizables:
+   - **Atoms** (`src/shared/ui-kit/atoms/`): `Button`, `Input`, `Label`, `Badge`, `Chip`, `Tab`, `Avatar`, `Icon`, `ProgressBar`, `Checkbox`, `Switch`, `StreakDot`, `ThemeToggle`, …
+   - **Molecules** (`src/shared/ui-kit/molecules/`): `FormField` (Label+Input+Error), `TabGroup`, `BrandLogo`, `StepIndicator`, `QuoteCard`, `StreakWeek`, `CategoryProgressRow`, `Toast`, `ConfirmDialog`, …
+   - **Organisms específicos** del feature: viven en `modules/<feature>/presentation/components/` (e.g. `LoginForm`, `AuthSidePanel`, `GoalCard`, `StepList`).
+
+2. **Definir design tokens** en `src/shared/ui-kit/tokens.css` (colores, tipografía, espaciado, sombras, easings, keyframes) y exponerlos vía `@theme inline` de Tailwind v4 en `app/globals.css`. Los tokens cambian por tema (light/dark) cambiando variables CSS.
+
+3. **Crear los átomos encima de los shadcn primitives**, reemplazando estilos:
+   ```tsx
+   // src/shared/ui-kit/atoms/Button.tsx
+   import { Button as ShadButton } from '@/components/ui/button';
+   import { cn } from '@/shared/presentation/utils/cn';
+
+   export function Button({ className, ...props }: ButtonProps) {
+     return <ShadButton className={cn('atomic-btn …', className)} {...props} />;
+   }
+   ```
+
+4. **Regla dura**: el resto del código consume **siempre** desde `@/shared/ui-kit/*` y **nunca** desde `@/components/ui/*` (shadcn queda confinado al ui-kit). Esto lo enforzamos con `eslint-plugin-boundaries` (§2.1).
+
+**Mapping HTML → componentes** (se irá completando conforme se agreguen más HTMLs):
+
+| HTML | Atoms/Molecules a extraer | Organisms del feature |
+|---|---|---|
+| `B _ Vibrante _graphic_ color blocks_.html` (auth) | `BrandLogo`, `StreakBadge`, `ThemeToggle`, `StepIndicator`, `TabGroup`, `FormField` (con `PasswordInput` que tiene toggle show), `StreakWeek`, `CategoryProgressRow`, `QuoteCard` | `LoginForm`, `RegisterForm`, `AuthSidePanel`, `AuthScreen` |
 
 ---
 
-## 2. Estructura de carpetas (Clean Architecture)
+## 2. Estructura de carpetas (Screaming + Clean)
 
 ```
 atomic-goals/
-├── app/                                     # ── PRESENTATION (Next.js App Router)
+├── app/                                     # ── ROUTING (Next.js App Router, sin lógica)
 │   ├── layout.tsx                           # ThemeProvider, Toaster, AuthInit
 │   ├── page.tsx                             # landing / redirect a /dashboard si auth
-│   ├── globals.css                          # tailwind v4 + tokens
+│   ├── globals.css                          # Tailwind v4 + @theme inline → ui-kit tokens
 │   ├── (auth)/                              # grupo público
 │   │   ├── login/
-│   │   │   ├── page.tsx
-│   │   │   └── actions.ts                   # Server Actions → llaman use cases
+│   │   │   ├── page.tsx                     # <AuthScreen mode="login"/> de modules/auth
+│   │   │   └── actions.ts                   # Server Action → use case Login
 │   │   └── register/
 │   │       ├── page.tsx
 │   │       └── actions.ts
 │   ├── (app)/                               # grupo protegido (middleware)
-│   │   ├── layout.tsx                       # Sidebar + Topbar
-│   │   ├── dashboard/page.tsx
+│   │   ├── layout.tsx                       # <AppShell/> (Sidebar+Topbar) de shared
+│   │   ├── dashboard/page.tsx               # <DashboardScreen/> de modules/dashboard
 │   │   ├── categories/
 │   │   │   ├── page.tsx
 │   │   │   ├── actions.ts
@@ -81,168 +145,201 @@ atomic-goals/
 │   │   └── settings/page.tsx
 │   └── api/
 │       └── auth/
-│           ├── refresh/route.ts             # Route Handler: para refresh desde client
+│           ├── refresh/route.ts             # delega en RefreshSessionUseCase
 │           └── logout/route.ts
 │
 ├── src/
-│   ├── core/                                # ── DOMAIN + APPLICATION
-│   │   ├── domain/
-│   │   │   ├── entities/                    # tipos puros (no clases pesadas, son types/objetos congelados)
-│   │   │   │   ├── user.ts
-│   │   │   │   ├── category.ts
-│   │   │   │   ├── goal.ts
-│   │   │   │   ├── goal-instance.ts
-│   │   │   │   ├── step.ts                  # discriminated union de los 4 tipos
-│   │   │   │   ├── activity-log.ts
-│   │   │   │   └── progress.ts              # VO ProgressValue (0..100)
-│   │   │   ├── value-objects/
-│   │   │   │   ├── email.ts
-│   │   │   │   └── uuid.ts
-│   │   │   ├── errors/
-│   │   │   │   ├── domain-error.ts
-│   │   │   │   ├── not-found.error.ts
-│   │   │   │   ├── unauthorized.error.ts
-│   │   │   │   └── validation.error.ts
-│   │   │   └── services/
-│   │   │       └── progress-calculator.ts   # mismo algoritmo que el back (para optimistic UI)
+│   ├── modules/                             # ── SCREAMING: el dominio al primer nivel
+│   │   ├── auth/
+│   │   │   ├── domain/
+│   │   │   │   ├── entities/user.ts
+│   │   │   │   ├── value-objects/email.ts
+│   │   │   │   └── errors/{invalid-credentials,unauthorized}.error.ts
+│   │   │   ├── application/
+│   │   │   │   ├── gateways/{auth,session}.gateway.ts          # puertos
+│   │   │   │   └── use-cases/
+│   │   │   │       ├── login.use-case.ts
+│   │   │   │       ├── register.use-case.ts
+│   │   │   │       ├── logout.use-case.ts
+│   │   │   │       ├── refresh-session.use-case.ts
+│   │   │   │       └── get-current-user.use-case.ts
+│   │   │   ├── infrastructure/
+│   │   │   │   ├── http-auth.gateway.ts
+│   │   │   │   ├── next-cookie-session.gateway.ts              # server
+│   │   │   │   ├── browser-session.gateway.ts                  # client
+│   │   │   │   └── mappers/user.mapper.ts
+│   │   │   ├── presentation/
+│   │   │   │   ├── components/                                 # organisms del feature
+│   │   │   │   │   ├── AuthScreen.tsx
+│   │   │   │   │   ├── LoginForm.tsx
+│   │   │   │   │   ├── RegisterForm.tsx
+│   │   │   │   │   └── AuthSidePanel.tsx                       # racha + categorías + cita
+│   │   │   │   ├── hooks/use-auth.ts
+│   │   │   │   ├── stores/auth-store.ts                        # Zustand
+│   │   │   │   ├── schemas/{login,register}.schema.ts
+│   │   │   │   └── mappers/{login,register}-form.mapper.ts
+│   │   │   └── index.ts                                        # barrel público (organisms + tipos)
 │   │   │
-│   │   └── application/
-│   │       ├── gateways/                    # PUERTOS (interfaces)
-│   │       │   ├── auth.gateway.ts
-│   │       │   ├── category.gateway.ts
-│   │       │   ├── goal.gateway.ts
-│   │       │   ├── goal-instance.gateway.ts
-│   │       │   ├── step.gateway.ts
-│   │       │   ├── dashboard.gateway.ts
-│   │       │   ├── activity.gateway.ts
-│   │       │   ├── trash.gateway.ts
-│   │       │   └── session.gateway.ts       # read/write cookies+tokens
-│   │       └── use-cases/
-│   │           ├── auth/
-│   │           │   ├── login.use-case.ts
-│   │           │   ├── register.use-case.ts
-│   │           │   ├── logout.use-case.ts
-│   │           │   └── get-current-user.use-case.ts
-│   │           ├── categories/
-│   │           ├── goals/
-│   │           ├── steps/
-│   │           │   ├── update-step-progress.use-case.ts   # optimista local + sync
-│   │           │   └── ...
-│   │           ├── dashboard/
-│   │           ├── activity/
-│   │           └── trash/
+│   │   ├── categories/
+│   │   │   ├── domain/{entities/category.ts, errors/}
+│   │   │   ├── application/
+│   │   │   │   ├── gateways/category.gateway.ts
+│   │   │   │   └── use-cases/{create,update,delete,restore,list,get}-category.use-case.ts
+│   │   │   ├── infrastructure/{http-category.gateway.ts, mappers/category.mapper.ts}
+│   │   │   └── presentation/
+│   │   │       ├── components/{CategoryListScreen,CategoryDetailScreen,CategoryCard,CategoryForm,CategoryColorPicker,CategoryIconPicker}.tsx
+│   │   │       ├── hooks/use-categories.ts
+│   │   │       ├── schemas/category.schema.ts
+│   │   │       └── mappers/category-form.mapper.ts
+│   │   │
+│   │   ├── goals/
+│   │   │   ├── domain/
+│   │   │   │   ├── entities/{goal,goal-instance}.ts
+│   │   │   │   ├── enums/cycle-period.ts
+│   │   │   │   └── errors/
+│   │   │   ├── application/
+│   │   │   │   ├── gateways/{goal,goal-instance}.gateway.ts
+│   │   │   │   └── use-cases/                                  # CRUD + ListInstances, CompleteInstance, …
+│   │   │   ├── infrastructure/{http-goal.gateway.ts, http-goal-instance.gateway.ts, mappers/}
+│   │   │   └── presentation/
+│   │   │       ├── components/{GoalListScreen,GoalDetailScreen,GoalCard,GoalForm,GoalCycleHistory,GoalFilters}.tsx
+│   │   │       ├── hooks/use-goals.ts
+│   │   │       ├── stores/goal-filters-store.ts
+│   │   │       ├── schemas/goal.schema.ts
+│   │   │       └── mappers/goal-form.mapper.ts
+│   │   │
+│   │   ├── steps/
+│   │   │   ├── domain/
+│   │   │   │   ├── entities/step.ts                            # union discriminada de los 4 subtipos
+│   │   │   │   ├── services/progress-calculator.ts             # mismo algoritmo que el back (optimistic UI)
+│   │   │   │   └── errors/
+│   │   │   ├── application/
+│   │   │   │   ├── gateways/step.gateway.ts
+│   │   │   │   └── use-cases/{create,update-metadata,update-progress,delete,restore,reorder}-step.use-case.ts
+│   │   │   ├── infrastructure/{http-step.gateway.ts, mappers/step.mapper.ts}
+│   │   │   └── presentation/
+│   │   │       ├── components/
+│   │   │       │   ├── StepList.tsx                            # @dnd-kit/sortable
+│   │   │       │   ├── StepFormDialog.tsx                      # selector de tipo
+│   │   │       │   ├── StatusEditor.tsx
+│   │   │       │   └── subtypes/{ProgressBarStep,CheckStep,StatusStep,CounterStep}.tsx
+│   │   │       ├── hooks/use-steps.ts                          # useOptimistic + sync
+│   │   │       └── schemas/step.schema.ts
+│   │   │
+│   │   ├── dashboard/
+│   │   │   ├── domain/{summary.ts, timeline-point.ts}
+│   │   │   ├── application/
+│   │   │   │   ├── gateways/dashboard.gateway.ts
+│   │   │   │   └── use-cases/{get-summary,get-timeline,get-calendar,get-upcoming}.use-case.ts
+│   │   │   ├── infrastructure/{http-dashboard.gateway.ts, mappers/}
+│   │   │   └── presentation/
+│   │   │       └── components/{DashboardScreen,SummaryCards,StreakCard,CategoryBreakdownChart,ProgressTimelineChart,UpcomingList}.tsx
+│   │   │
+│   │   ├── calendar/
+│   │   │   ├── domain/{calendar-event.ts}
+│   │   │   ├── application/{gateways, use-cases/get-calendar-events.use-case.ts}
+│   │   │   ├── infrastructure/
+│   │   │   └── presentation/components/{CalendarScreen,MonthView,WeekView,EventPopover,CalendarFilters}.tsx
+│   │   │
+│   │   ├── activity/
+│   │   │   ├── domain/{activity-log.ts}
+│   │   │   ├── application/{gateways/activity.gateway.ts, use-cases/list-activity.use-case.ts}
+│   │   │   ├── infrastructure/
+│   │   │   └── presentation/components/{ActivityScreen,ActivityFeed,ActivityItem}.tsx
+│   │   │
+│   │   ├── trash/
+│   │   │   ├── domain/
+│   │   │   ├── application/{gateways/trash.gateway.ts, use-cases/{list-trash,restore,permanent-delete}.use-case.ts}
+│   │   │   ├── infrastructure/
+│   │   │   └── presentation/
+│   │   │       ├── components/{TrashScreen,TrashTable,RestoreButton,PermanentDeleteButton}.tsx
+│   │   │       └── stores/trash-selection-store.ts
+│   │   │
+│   │   └── settings/
+│   │       ├── domain/
+│   │       ├── application/{gateways, use-cases/{update-profile,change-password}.use-case.ts}
+│   │       ├── infrastructure/
+│   │       └── presentation/components/{SettingsScreen,ProfileForm,ChangePasswordForm,AppearanceSettings}.tsx
 │   │
-│   ├── infrastructure/                      # ── INFRASTRUCTURE
-│   │   ├── api/
-│   │   │   ├── openapi-client.ts            # openapi-fetch instance
-│   │   │   ├── schema.d.ts                  # generado por openapi-typescript
-│   │   │   ├── http-error.ts                # mapea errores HTTP → DomainError
-│   │   │   └── server-client.ts             # variante server-side con cookie forwarding
-│   │   ├── gateways/                        # implementaciones de los puertos
-│   │   │   ├── http-auth.gateway.ts
-│   │   │   ├── http-category.gateway.ts
-│   │   │   ├── http-goal.gateway.ts
-│   │   │   ├── http-goal-instance.gateway.ts
-│   │   │   ├── http-step.gateway.ts
-│   │   │   ├── http-dashboard.gateway.ts
-│   │   │   ├── http-activity.gateway.ts
-│   │   │   ├── http-trash.gateway.ts
-│   │   │   ├── next-cookie-session.gateway.ts       # usa cookies() de Next (server)
-│   │   │   └── browser-session.gateway.ts           # client-side
-│   │   ├── mappers/                         # OpenAPI types ↔ Domain entities
-│   │   │   ├── user.mapper.ts
-│   │   │   ├── category.mapper.ts
-│   │   │   ├── goal.mapper.ts
-│   │   │   ├── goal-instance.mapper.ts
-│   │   │   ├── step.mapper.ts               # switch por type para los 4 subtipos
-│   │   │   └── activity.mapper.ts
-│   │   └── storage/
-│   │       └── local-storage.ts             # wrapper tipado (theme, sidebar collapsed)
+│   ├── shared/                              # ── CROSS-CUTTING (mismas 4 capas)
+│   │   ├── domain/
+│   │   │   ├── errors/{domain-error.ts, not-found.error.ts, validation.error.ts}
+│   │   │   └── value-objects/{uuid.ts, progress-value.ts}
+│   │   ├── application/
+│   │   │   └── ports/{clock.gateway.ts}                        # puertos cross-feature (si surgen)
+│   │   ├── infrastructure/
+│   │   │   ├── api/
+│   │   │   │   ├── openapi-client.ts                           # openapi-fetch (browser)
+│   │   │   │   ├── server-client.ts                            # server-side con cookie forwarding
+│   │   │   │   ├── schema.d.ts                                 # generado por openapi-typescript
+│   │   │   │   └── http-error.ts                               # HTTP → DomainError
+│   │   │   └── storage/local-storage.ts                        # wrapper tipado
+│   │   ├── presentation/
+│   │   │   ├── stores/ui-store.ts                              # sidebar collapsed, theme, etc.
+│   │   │   ├── hooks/{use-debounce.ts, use-media-query.ts}
+│   │   │   ├── layout/{AppShell,Sidebar,Topbar,UserMenu}.tsx
+│   │   │   └── utils/{cn.ts, format-date.ts, format-error.ts}  # DomainError → mensaje
+│   │   ├── composition/                     # ── COMPOSITION ROOT (único que junta módulos)
+│   │   │   ├── tokens.ts                                       # symbols/keys
+│   │   │   ├── server-container.ts                             # factories para RSC / Server Actions
+│   │   │   └── client-container.ts                             # factories para Client Components
+│   │   └── ui-kit/                          # ── DISEÑO PROPIO (atomización de htmls/)
+│   │       ├── tokens.css                                      # design tokens (color, type, motion)
+│   │       ├── atoms/{Button,Input,Label,Badge,Chip,Tab,Icon,ProgressBar,Checkbox,Switch,StreakDot,ThemeToggle,PasswordInput}.tsx
+│   │       ├── molecules/{FormField,TabGroup,BrandLogo,StepIndicator,QuoteCard,StreakWeek,CategoryProgressRow,Toast,ConfirmDialog,DatePickerField}.tsx
+│   │       └── icons/                                          # set custom + wrappers sobre lucide
 │   │
-│   ├── composition/                         # ── COMPOSITION ROOT
-│   │   ├── tokens.ts                        # symbols de los gateways/use-cases
-│   │   ├── server-container.ts              # factories para uso en RSC / Server Actions
-│   │   └── client-container.ts              # factories para Client Components
-│   │
-│   └── presentation/                        # ── PRESENTATION (lógica de UI reutilizable)
-│       ├── stores/                          # Zustand (estado de UI, no de dominio)
-│       │   ├── ui-store.ts
-│       │   ├── auth-store.ts                # accessToken + user (cliente)
-│       │   ├── filters-store.ts
-│       │   └── trash-selection-store.ts
-│       ├── hooks/
-│       │   ├── use-auth.ts                  # conecta auth-store + use cases
-│       │   ├── use-goals.ts                 # wrappers sobre use cases + revalidation
-│       │   ├── use-steps.ts
-│       │   ├── use-dashboard.ts
-│       │   └── use-debounce.ts
-│       ├── schemas/                         # Zod schemas para RHF (presentation)
-│       │   ├── login.schema.ts
-│       │   ├── register.schema.ts
-│       │   ├── category.schema.ts
-│       │   ├── goal.schema.ts
-│       │   └── step.schema.ts
-│       ├── mappers/                         # form values → use-case command
-│       │   ├── login-form.mapper.ts
-│       │   └── goal-form.mapper.ts
-│       └── utils/
-│           ├── cn.ts
-│           ├── format-date.ts
-│           └── format-error.ts              # DomainError → mensaje user-friendly
+│   └── components/ui/                       # shadcn primitives (CONFINADAS — solo ui-kit las consume)
 │
-├── components/                              # ── PRESENTATION (componentes React)
-│   ├── ui/                                  # shadcn (button, card, dialog, form, ...)
-│   ├── layout/
-│   │   ├── sidebar.tsx
-│   │   ├── topbar.tsx
-│   │   └── user-menu.tsx
-│   ├── categories/
-│   ├── goals/
-│   ├── steps/
-│   │   └── types/                           # subtipos
-│   ├── dashboard/
-│   ├── calendar/
-│   ├── activity/
-│   └── shared/
-│
+├── htmls/                                   # fuente de verdad visual (diseños a atomizar)
+│   └── B _ Vibrante _graphic_ color blocks_.html               # auth: login + side panel
 ├── middleware.ts                            # protege rutas /(app)
-├── components.json                          # shadcn config
+├── components.json                          # shadcn config (output → src/components/ui)
 ├── next.config.ts
-├── tsconfig.json                            # paths: @/core, @/infrastructure, @/composition, @/presentation
+├── tsconfig.json                            # paths: @/modules/*, @/shared/*, @/components/*
 └── package.json
 ```
 
+> Nota sobre shadcn: por defecto instala en `components/ui/` (raíz). Lo movemos a `src/components/ui/` ajustando `components.json` (`"aliases.ui": "@/components/ui"` con base `src`). Esto deja todo el código bajo `src/` excepto `app/` (routing).
+
 ### 2.1 Reglas de imports (linter)
 
-`eslint-plugin-boundaries` configurado:
+`eslint-plugin-boundaries` configurado con dos dimensiones: **módulo** (auth, goals, …, shared) y **capa** (domain, application, infrastructure, presentation).
 
 | Desde | Puede importar |
 |---|---|
-| `src/core/domain` | nada externo, solo TS puro |
-| `src/core/application` | `src/core/domain` |
-| `src/infrastructure` | `src/core/*`, libs externas |
-| `src/composition` | todo (es el único que junta) |
-| `src/presentation` | `src/core/*`, `src/composition`, libs UI |
-| `app/`, `components/` | `src/presentation`, `src/composition`, `src/core/*` (solo tipos), libs UI |
-| `src/core/*` ❌ | nunca: `app/`, `components/`, `infrastructure/`, fetch, Next APIs |
-| `app/`, `components/` ❌ | nunca importar `src/infrastructure/*` directamente |
+| `modules/<feature>/domain` | nada externo (TS puro). Permitido: `shared/domain` |
+| `modules/<feature>/application` | su propio `domain`, `shared/domain`, `shared/application` |
+| `modules/<feature>/infrastructure` | su propio `domain`+`application`, `shared/*` (excepto `presentation`), libs externas |
+| `modules/<feature>/presentation` | su propio `domain`+`application`, `shared/presentation`, `shared/ui-kit`, `shared/composition`, libs UI |
+| `shared/domain` | nada externo |
+| `shared/application` | `shared/domain` |
+| `shared/infrastructure` | `shared/domain`, `shared/application`, libs externas |
+| `shared/composition` | **todo** (único que junta módulos) |
+| `shared/ui-kit` | `shared/presentation/utils`, `src/components/ui` (shadcn), libs UI |
+| `shared/presentation` | `shared/domain`, `shared/ui-kit`, `shared/composition`, libs UI |
+| `app/` | `shared/composition`, `shared/ui-kit`, `shared/presentation`, **organisms de `modules/<feature>/presentation` solo vía `index.ts`** del módulo, libs UI |
+| ❌ módulo → módulo | un módulo **NUNCA** importa de otro (`modules/goals/...` no toca `modules/steps/...`). Si surge necesidad: subir a `shared/`, exponerlo en `index.ts`, o componer en `composition` |
+| ❌ presentation → infrastructure | `app/` y `modules/<feature>/presentation` no importan `infrastructure` (ni propia ni ajena) — siempre vía `composition` |
+| ❌ shadcn directo | **nadie** importa `@/components/ui/*` excepto `@/shared/ui-kit/*` (shadcn queda encapsulado) |
+| ❌ Next APIs en core | `domain` y `application` no importan `next/*`, `react`, fetch, etc. |
 
 ---
 
-## 3. Convenciones Next.js 16 + Clean Architecture
+## 3. Convenciones Next.js 16 + Screaming/Clean
 
 > **Antes de codear**: abrir `node_modules/next/dist/docs/` y leer secciones de App Router, Server Actions, fetch caching, middleware. Lo siguiente es el plan de **uso**, sujeto a verificación de API exacta:
 
-- **Server Components**: invocan use cases vía `serverContainer.getGoals.execute(...)`. El container resuelve el gateway con cookie forwarding automático.
+- **Server Components**: las páginas en `app/` importan el organism del módulo (`<GoalListScreen/>` desde `@/modules/goals`). El screen invoca use-cases vía `serverContainer.goals.list.execute(...)`. El container resuelve el gateway con cookie forwarding automático.
 - **Server Actions**: `actions.ts` colocado junto a la página, marcado con `'use server'`. Cada action:
-  1. Valida con Zod schema (presentation).
-  2. Mapea form values → command (`src/presentation/mappers/`).
-  3. Invoca use case desde `serverContainer`.
+  1. Valida con el Zod schema del módulo (`@/modules/<feature>/presentation/schemas/...`).
+  2. Mapea form values → command con el mapper del módulo.
+  3. Invoca el use case desde `serverContainer`.
   4. Captura `DomainError` y devuelve `{ ok:false, fieldErrors }` o `{ ok:true, data }`.
   5. Revalida con `revalidateTag()` o `revalidatePath()`.
-- **Client Components**: usan hooks de `src/presentation/hooks/` que internamente usan `clientContainer`. Marcados con `'use client'`.
+- **Client Components**: usan hooks de `@/modules/<feature>/presentation/hooks/` que internamente usan `clientContainer`. Marcados con `'use client'`.
 - **Streaming**: `<Suspense>` con `loading.tsx` por carpeta.
-- **Error handling**: `error.tsx` por segmento + `format-error.ts` que mapea `DomainError` → mensaje.
+- **Error handling**: `error.tsx` por segmento + `format-error.ts` (en `shared/presentation/utils`) que mapea `DomainError` → mensaje.
 - **Caching**: tags por entidad (`categories`, `goals`, `goal:${id}`, `dashboard`); invalidar desde Server Actions.
 
 ### 3.1 Flujo Server Action (ejemplo Create Goal)
@@ -250,10 +347,10 @@ atomic-goals/
 ```ts
 // app/(app)/goals/actions.ts
 'use server';
-import { serverContainer } from '@/composition/server-container';
-import { goalFormSchema } from '@/presentation/schemas/goal.schema';
-import { toCreateGoalCommand } from '@/presentation/mappers/goal-form.mapper';
-import { DomainError } from '@/core/domain/errors/domain-error';
+import { serverContainer } from '@/shared/composition/server-container';
+import { goalFormSchema } from '@/modules/goals/presentation/schemas/goal.schema';
+import { toCreateGoalCommand } from '@/modules/goals/presentation/mappers/goal-form.mapper';
+import { DomainError } from '@/shared/domain/errors/domain-error';
 import { revalidateTag } from 'next/cache';
 
 export async function createGoalAction(input: unknown) {
@@ -262,7 +359,7 @@ export async function createGoalAction(input: unknown) {
 
   try {
     const command = toCreateGoalCommand(parsed.data);
-    const goal = await serverContainer().createGoal.execute(command);
+    const goal = await serverContainer().goals.create.execute(command);
     revalidateTag('goals');
     return { ok: true, data: goal };
   } catch (e) {
@@ -272,10 +369,13 @@ export async function createGoalAction(input: unknown) {
 }
 ```
 
-### 3.2 Flujo Use Case (cliente)
+### 3.2 Flujo Use Case
 
 ```ts
-// src/core/application/use-cases/goals/create-goal.use-case.ts
+// src/modules/goals/application/use-cases/create-goal.use-case.ts
+import type { GoalGateway } from '../gateways/goal.gateway';
+import type { Goal, CreateGoalCommand } from '../../domain/entities/goal';
+
 export class CreateGoalUseCase {
   constructor(private readonly gateway: GoalGateway) {}
   async execute(command: CreateGoalCommand): Promise<Goal> {
@@ -288,7 +388,12 @@ export class CreateGoalUseCase {
 ### 3.3 Gateway (infrastructure)
 
 ```ts
-// src/infrastructure/gateways/http-goal.gateway.ts
+// src/modules/goals/infrastructure/http-goal.gateway.ts
+import type { GoalGateway } from '../application/gateways/goal.gateway';
+import type { OpenApiClient } from '@/shared/infrastructure/api/openapi-client';
+import { mapHttpError } from '@/shared/infrastructure/api/http-error';
+import { GoalMapper } from './mappers/goal.mapper';
+
 export class HttpGoalGateway implements GoalGateway {
   constructor(private readonly client: OpenApiClient) {}
   async create(cmd: CreateGoalCommand): Promise<Goal> {
@@ -296,6 +401,20 @@ export class HttpGoalGateway implements GoalGateway {
     if (error) throw mapHttpError(error);
     return GoalMapper.toDomain(data);
   }
+}
+```
+
+### 3.4 Página `app/` (entry-point fino)
+
+```tsx
+// app/(app)/goals/page.tsx
+import { GoalListScreen } from '@/modules/goals';      // barrel del módulo
+import { serverContainer } from '@/shared/composition/server-container';
+
+export default async function GoalsPage({ searchParams }: { searchParams: Promise<Record<string, string>> }) {
+  const filters = await searchParams;
+  const goals = await serverContainer().goals.list.execute(filters);
+  return <GoalListScreen initialGoals={goals} initialFilters={filters} />;
 }
 ```
 
@@ -339,11 +458,26 @@ export class HttpGoalGateway implements GoalGateway {
 
 ## 6. Páginas y componentes — detalle por feature
 
-### 6.1 `/login` y `/register`
-- Card centrado con shadcn `<Card>`, `<Form>` (RHF) y validación con resolver custom que mapea errores de `class-validator` (vienen 400 del back con array `message`).
-- Campos: email, password (+name, +confirm en register).
-- Errores top-level + por campo.
-- Link cruzado login ↔ register.
+> Para cada feature listo el **HTML de referencia** (cuando exista en `htmls/`). Si todavía no hay HTML para una pantalla, se irán agregando y este plan se actualiza.
+
+### 6.1 `/login` y `/register` — módulo `auth`
+**Diseño de referencia**: `htmls/B _ Vibrante _graphic_ color blocks_.html`.
+
+Layout split en dos paneles:
+- **Panel izquierdo (`<LoginForm/>` / `<RegisterForm/>`)**:
+  - Header con `<BrandLogo/>` ("atomic / goals"), `<StreakBadge>` (racha + "ahora" con `vibe-blink`) y `<ThemeToggle/>` (sun/moon).
+  - Título grande tipo "Vuelve al ritmo." + `<StepIndicator label="01 de 02"/>`.
+  - `<TabGroup>` "Entrar" | "Crear cuenta" (cambia el organism, no la ruta — o se mantiene una ruta por modo, decidir en Fase 1).
+  - `<FormField>` correo + `<PasswordInput>` con toggle "show", link "recuperar →".
+  - Botón submit `<Button variant="primary">entrar →</Button>` con animación `vibe-fade` al estado loading.
+  - Footer pequeño: "demo · cualquier correo válido" (placeholder mientras no haya endpoint real).
+- **Panel derecho (`<AuthSidePanel/>`)** — bloques de color decorativos:
+  - `<StreakWeekCard/>`: "tu racha · semana actual", número grande "23 días seguidos", `<StreakWeek>` con puntos L M X J V S D, "récord personal · 47 días".
+  - `<CategoriesProgressCard/>`: header "tus categorías 5/12", lista de `<CategoryProgressRow>` (nombre + barra + %).
+  - `<QuoteCard/>`: "cita del día", quote + autor.
+- Validación: Zod en `modules/auth/presentation/schemas/`. El 400 del back (`class-validator`) se mapea a `setError` en cada campo.
+- Errores top-level (alert) + por campo. Link cruzado login ↔ register.
+- Atomización exhaustiva en `shared/ui-kit/` — ver §1.2 tabla de mapping.
 
 ### 6.2 Layout `(app)/layout.tsx`
 - **Sidebar** colapsable (estado en `ui-store`): logo, nav (Dashboard, Categorías, Metas, Calendario, Actividad, Papelera, Settings), user menu abajo.
@@ -436,107 +570,110 @@ Decisión: aunque el back usa `class-validator`, en el front usamos **Zod** (com
 
 ## 8. Fases de implementación
 
-### Fase 0 — Setup + esqueleto Clean (1 día)
+### Fase 0 — Setup + esqueleto Screaming/Clean + UI Kit base (1.5 días)
 - [ ] Instalar deps: `zustand react-hook-form @hookform/resolvers zod openapi-fetch openapi-typescript chart.js react-chartjs-2 @dnd-kit/core @dnd-kit/sortable lucide-react next-themes sonner date-fns clsx tailwind-merge class-variance-authority`.
 - [ ] Dev deps: `eslint-plugin-boundaries`.
-- [ ] `pnpm dlx shadcn@latest init` + agregar: `button card dialog form input label select textarea dropdown-menu sheet tabs avatar badge checkbox table tooltip skeleton sonner toggle separator scroll-area popover calendar date-picker`.
-- [ ] Crear estructura completa de `src/{core,infrastructure,composition,presentation}` con stubs.
-- [ ] `src/core/domain/errors/` con `DomainError`, `NotFoundError`, `UnauthorizedError`, `ValidationError`.
-- [ ] `tsconfig.json` paths: `@/core/*`, `@/infrastructure/*`, `@/composition/*`, `@/presentation/*`.
-- [ ] `eslint-plugin-boundaries` configurado con reglas de §2.1.
-- [ ] `next-themes` provider en `app/layout.tsx`.
+- [ ] `pnpm dlx shadcn@latest init` con output `src/components/ui` (editar `components.json`: `aliases.ui = "@/components/ui"`, `aliases.components = "@/components"`).
+- [ ] Agregar primitives shadcn: `button card dialog form input label select textarea dropdown-menu sheet tabs avatar badge checkbox table tooltip skeleton sonner toggle separator scroll-area popover calendar date-picker`.
+- [ ] Crear estructura `src/modules/{auth,categories,goals,steps,dashboard,calendar,activity,trash,settings}/{domain,application,infrastructure,presentation}` con stubs (un README.md por módulo describiendo su responsabilidad).
+- [ ] Crear estructura `src/shared/{domain,application,infrastructure,presentation,composition,ui-kit}`.
+- [ ] `src/shared/domain/errors/`: `DomainError`, `NotFoundError`, `UnauthorizedError`, `ValidationError`.
+- [ ] `tsconfig.json` paths: `@/modules/*`, `@/shared/*`, `@/components/*`, `@/app/*`.
+- [ ] `eslint-plugin-boundaries` configurado con las reglas de §2.1 (módulos aislados entre sí + capas dentro de cada módulo + shadcn solo desde ui-kit).
+- [ ] **Design tokens y UI Kit base** (atomización inicial desde `htmls/B _ Vibrante_...html`):
+  - [ ] `src/shared/ui-kit/tokens.css`: paleta "Vibrante / color blocks" (primarios, neutrales, semánticos), tipografía (JetBrains Mono + sans), espacios, radios, sombras, keyframes (`vibe-blink`, `vibe-pulse`, `vibe-fade`), easings.
+  - [ ] `app/globals.css`: importa tokens + Tailwind v4 (`@theme inline`).
+  - [ ] `src/shared/ui-kit/atoms/`: primer batch — `Button`, `Input`, `PasswordInput`, `Label`, `Badge`, `Chip`, `Tab`, `Icon`, `ProgressBar`, `Checkbox`, `StreakDot`, `ThemeToggle`.
+  - [ ] `src/shared/ui-kit/molecules/`: `FormField`, `TabGroup`, `BrandLogo`, `StepIndicator`, `QuoteCard`, `StreakWeek`, `CategoryProgressRow`.
+  - [ ] Storybook **opcional** o página interna `/__styleguide` para visualizar el ui-kit.
+- [ ] `next-themes` provider en `app/layout.tsx` (los tokens cambian por tema).
 - [ ] `.env.local`: `NEXT_PUBLIC_API_URL=http://localhost:4000/api/v1`, `API_INTERNAL_URL=http://localhost:4000/api/v1`.
-- [ ] Composition root vacío con tokens y factories que devuelven stubs.
-- [ ] Healthcheck: Server Component que invoca un `HealthCheckUseCase` (vía `serverContainer`) y muestra status.
+- [ ] `src/shared/composition/` con tokens y factories que devuelven stubs por módulo (`{ auth: {...}, goals: {...}, ... }`).
+- [ ] Healthcheck: Server Component que invoca `HealthCheckUseCase` (vía `serverContainer`) y muestra status.
 
 ### Fase 1 — Auth + Layout protegido (2.5 días)
 **Bloqueada por backend Fase 1.**
-- [ ] Script `openapi:gen` + primera generación de `schema.d.ts`.
-- [ ] `src/infrastructure/api/openapi-client.ts` + `server-client.ts` (con cookie forwarding).
-- [ ] `src/infrastructure/api/http-error.ts` que mapea status → DomainError.
-- [ ] **Domain**: `User`, `Email` VO, errores de auth.
-- [ ] **Application**: gateway `AuthGateway`, `SessionGateway`. Use cases `Login`, `Register`, `Logout`, `RefreshSession`, `GetCurrentUser`.
-- [ ] **Infrastructure**: `HttpAuthGateway`, `NextCookieSessionGateway` (server), `BrowserSessionGateway` (client).
-- [ ] **Mappers**: `UserMapper`.
-- [ ] **Composition**: registrar gateways y use cases en server-container y client-container.
-- [ ] **Presentation**: `auth-store` (Zustand), schemas Zod login/register, mappers form→command.
-- [ ] **Presentation**: hook `useAuth()`.
-- [ ] Páginas `/login`, `/register` con `actions.ts` que invocan use cases.
+- [ ] Script `openapi:gen` + primera generación de `schema.d.ts` en `src/shared/infrastructure/api/`.
+- [ ] `src/shared/infrastructure/api/openapi-client.ts` + `server-client.ts` (con cookie forwarding) + `http-error.ts`.
+- [ ] **`modules/auth/domain`**: `User`, `Email` VO, errores `InvalidCredentialsError`, `UnauthorizedError`.
+- [ ] **`modules/auth/application`**: gateways `AuthGateway`, `SessionGateway`. Use cases `Login`, `Register`, `Logout`, `RefreshSession`, `GetCurrentUser`.
+- [ ] **`modules/auth/infrastructure`**: `HttpAuthGateway`, `NextCookieSessionGateway` (server), `BrowserSessionGateway` (client), `UserMapper`.
+- [ ] **`shared/composition`**: registrar gateways y use cases del módulo `auth` en `serverContainer.auth` y `clientContainer.auth`.
+- [ ] **`modules/auth/presentation`**:
+  - `stores/auth-store.ts` (Zustand: accessToken + user).
+  - `schemas/{login,register}.schema.ts` Zod.
+  - `mappers/{login,register}-form.mapper.ts` (form → command).
+  - `hooks/use-auth.ts`.
+  - **Atomizar el HTML del auth**: completar `AuthScreen`, `LoginForm`, `RegisterForm`, `AuthSidePanel` reutilizando los atoms/molecules del ui-kit (§6.1).
+- [ ] Páginas `app/(auth)/login/page.tsx`, `app/(auth)/register/page.tsx` (entry-points finos) + `actions.ts` que invocan use cases.
 - [ ] `middleware.ts` (lee cookies, redirect si no auth).
-- [ ] Route Handler `app/api/auth/refresh/route.ts` que delega al use case.
-- [ ] Layout `(app)/layout.tsx` con Sidebar + Topbar.
+- [ ] Route Handler `app/api/auth/refresh/route.ts` que delega en `RefreshSessionUseCase`.
+- [ ] `shared/presentation/layout/AppShell` (Sidebar + Topbar) usado en `app/(app)/layout.tsx`.
 - [ ] User menu con logout (Server Action que invoca `LogoutUseCase`).
 
 ### Fase 2 — Categorías (1.5 días)
-- [ ] **Domain**: tipo `Category`.
-- [ ] **Application**: gateway `CategoryGateway`. Use cases `Create`, `Update`, `Delete`, `Restore`, `List`, `Get`.
-- [ ] **Infrastructure**: `HttpCategoryGateway`, `CategoryMapper`.
-- [ ] **Composition**: registrar.
-- [ ] **Presentation**: schemas Zod, hook `useCategories`, mapper form→command.
+**Módulo: `modules/categories/`. HTML pendiente.**
+- [ ] **domain**: tipo `Category`.
+- [ ] **application**: gateway `CategoryGateway`. Use cases `Create`, `Update`, `Delete`, `Restore`, `List`, `Get`.
+- [ ] **infrastructure**: `HttpCategoryGateway`, `CategoryMapper`.
+- [ ] **composition**: registrar `categories` en server/client containers.
+- [ ] **presentation**: schemas Zod, hook `useCategories`, mapper form→command.
 - [ ] Server Actions en `app/(app)/categories/actions.ts`.
-- [ ] Componentes `<CategoryCard>`, `<CategoryForm>` (dialog), `<CategoryList>`.
-- [ ] Páginas `/categories` y `/categories/[id]`.
-- [ ] Color picker (chips predefinidos) + icon picker (subset de lucide).
+- [ ] Organisms en el módulo: `<CategoryListScreen>`, `<CategoryDetailScreen>`, `<CategoryCard>`, `<CategoryForm>` (dialog).
+- [ ] Páginas `/categories` y `/categories/[id]` (entry-points finos).
+- [ ] Color picker (chips predefinidos del ui-kit) + icon picker (subset de lucide envuelto en `ui-kit/icons`).
+- [ ] Cuando llegue el HTML de esta vista → revisar tabla §1.2 y extraer atoms/molecules nuevos al ui-kit antes de armar organisms.
 
 ### Fase 3 — Metas (2.5 días)
-**Bloqueada por backend Fase 3.**
-- [ ] **Domain**: tipos `Goal`, `GoalInstance`, enum `CyclePeriod`, errores propios.
-- [ ] **Application**: gateways `GoalGateway`, `GoalInstanceGateway`. Use cases CRUD + `ListInstances`, `CompleteInstance`.
-- [ ] **Infrastructure**: gateways HTTP + mappers.
-- [ ] **Presentation**: schemas Zod con validaciones condicionales (cíclica → periodo requerido).
+**Módulo: `modules/goals/`. Bloqueada por backend Fase 3.**
+- [ ] **domain**: tipos `Goal`, `GoalInstance`, enum `CyclePeriod`, errores propios.
+- [ ] **application**: gateways `GoalGateway`, `GoalInstanceGateway`. Use cases CRUD + `ListInstances`, `CompleteInstance`.
+- [ ] **infrastructure**: gateways HTTP + mappers.
+- [ ] **presentation**: schemas Zod con validaciones condicionales (cíclica → periodo requerido), `goal-filters-store` (Zustand).
 - [ ] Server Actions `app/(app)/goals/actions.ts`.
-- [ ] `<GoalForm>` con campos condicionales (cíclica vs conclusiva).
-- [ ] `<GoalCard>`, `<GoalList>` con filtros (sincronizados a querystring + `filters-store`).
+- [ ] Organisms: `<GoalListScreen>`, `<GoalDetailScreen>`, `<GoalForm>` con campos condicionales (cíclica vs conclusiva), `<GoalCard>`, `<GoalFilters>` (sincronizados a querystring + store), `<GoalCycleHistory>`.
 - [ ] Páginas `/goals` y `/goals/[goalId]` con tabs Pasos | Histórico.
-- [ ] `<GoalCycleHistory>` para metas cíclicas.
 
 ### Fase 4 — Pasos y subtipos (3.5 días)
-**Bloqueada por backend Fase 4.**
-- [ ] **Domain**: union discriminada `Step = ProgressBarStep | CheckStep | StatusStep | CounterStep`, función `stepProgress(step)`.
-- [ ] **Domain**: `ProgressCalculator` (mismo algoritmo que el back) para optimistic UI.
-- [ ] **Application**: gateway `StepGateway`. Use cases `Create`, `UpdateMetadata`, `UpdateProgress`, `Delete`, `Restore`, `Reorder`.
-- [ ] **Application**: `UpdateStepProgressUseCase` calcula progreso local optimista y luego sincroniza.
-- [ ] **Infrastructure**: `HttpStepGateway`, `StepMapper` con switch por type.
-- [ ] **Presentation**: hook `useSteps` con estado optimista (useOptimistic).
-- [ ] `<StepList>` con `@dnd-kit/sortable`.
-- [ ] `<StepFormDialog>` con selector de tipo.
-- [ ] 4 componentes de subtipo con interacciones in-line.
-- [ ] Editor de statuses para `StatusStep`.
+**Módulo: `modules/steps/`. Bloqueada por backend Fase 4.**
+- [ ] **domain**: union discriminada `Step = ProgressBarStep | CheckStep | StatusStep | CounterStep`, función `stepProgress(step)`, `ProgressCalculator` (mismo algoritmo que el back) para optimistic UI.
+- [ ] **application**: gateway `StepGateway`. Use cases `Create`, `UpdateMetadata`, `UpdateProgress`, `Delete`, `Restore`, `Reorder`. `UpdateStepProgressUseCase` calcula progreso local optimista y luego sincroniza.
+- [ ] **infrastructure**: `HttpStepGateway`, `StepMapper` con switch por type.
+- [ ] **presentation**: hook `useSteps` con estado optimista (useOptimistic).
+- [ ] `<StepList>` con `@dnd-kit/sortable`, `<StepFormDialog>` con selector de tipo, los 4 subtipos en `presentation/components/subtypes/`, `<StatusEditor>` para `StatusStep`.
 
 ### Fase 5 — Dashboard real + Charts (2 días)
-**Bloqueada por backend Fase 5.**
-- [ ] **Application**: gateway `DashboardGateway`, use cases `GetSummary`, `GetTimeline`, `GetCalendar`, `GetUpcoming`.
-- [ ] **Infrastructure**: `HttpDashboardGateway`.
-- [ ] Configurar Chart.js (registrar componentes).
-- [ ] `<SummaryCards>`, `<StreakCard>`.
-- [ ] `<CategoryBreakdownChart>` (doughnut).
-- [ ] `<ProgressTimelineChart>` (line) con selector de rango.
-- [ ] `<UpcomingList>`, `<ActivityFeed>`.
-- [ ] Empty states.
+**Módulo: `modules/dashboard/`. Bloqueada por backend Fase 5.**
+- [ ] **application**: gateway `DashboardGateway`, use cases `GetSummary`, `GetTimeline`, `GetCalendar`, `GetUpcoming`.
+- [ ] **infrastructure**: `HttpDashboardGateway`.
+- [ ] Configurar Chart.js (registrar componentes; envoltorios "themed" en `ui-kit/molecules/Chart*` para que usen los tokens).
+- [ ] Organisms: `<DashboardScreen>`, `<SummaryCards>`, `<StreakCard>`, `<CategoryBreakdownChart>` (doughnut), `<ProgressTimelineChart>` (line con selector de rango), `<UpcomingList>`, `<ActivityFeed>`.
+- [ ] Empty states (en `ui-kit/molecules/EmptyState`).
 
 ### Fase 6 — Calendario (1 día)
-- [ ] Use case `GetCalendarEvents`.
-- [ ] `<MonthView>` sobre `react-day-picker` + overlay de eventos.
-- [ ] `<EventPopover>` con detalles del día.
-- [ ] Filtros (categoría, estado).
-- [ ] Toggle mes/semana.
+**Módulo: `modules/calendar/`.**
+- [ ] Use case `GetCalendarEvents` (puede consumir gateways de `goals`/`steps` vía composition o vivir en `dashboard`; decidir en Fase 5).
+- [ ] `<CalendarScreen>`, `<MonthView>` sobre `react-day-picker` (re-estilizado via ui-kit) + overlay de eventos, `<WeekView>`, `<EventPopover>`, `<CalendarFilters>`.
 
 ### Fase 7 — Actividad + Papelera (1.5 días)
-- [ ] **Application**: gateways `ActivityGateway`, `TrashGateway`. Use cases `ListActivity` (paginación cursor), `ListTrash`, `Restore`, `PermanentDelete`.
-- [ ] **Infrastructure**: gateways HTTP.
+**Módulos: `modules/activity/` y `modules/trash/`.**
+- [ ] **application**: gateways `ActivityGateway`, `TrashGateway`. Use cases `ListActivity` (paginación cursor), `ListTrash`, `Restore`, `PermanentDelete`.
+- [ ] **infrastructure**: gateways HTTP.
 - [ ] `<ActivityFeed>` paginado infinito (intersection observer + use case).
-- [ ] Página `/trash` con tabs + tabla seleccionable (selección en `trash-selection-store`).
-- [ ] `<ConfirmDialog>` reutilizable.
+- [ ] `<TrashScreen>` con tabs + tabla seleccionable (selección en `trash-selection-store`).
+- [ ] `<ConfirmDialog>` reutilizable (vive en `ui-kit/molecules/`).
 - [ ] Server Actions restore y permanent delete.
 
 ### Fase 8 — Settings + polish (1.5 días)
+**Módulo: `modules/settings/`.**
 - [ ] Use cases `UpdateProfile`, `ChangePassword`.
-- [ ] `/settings` con tabs perfil/apariencia.
+- [ ] `<SettingsScreen>` con tabs perfil/apariencia.
 - [ ] Cambio de password (form aparte).
-- [ ] Loading skeletons en todas las páginas.
-- [ ] `error.tsx` por segmento con `format-error.ts`.
-- [ ] Empty states bonitos.
+- [ ] Loading skeletons en todas las páginas (`ui-kit/atoms/Skeleton`).
+- [ ] `error.tsx` por segmento con `format-error.ts` (en `shared/presentation/utils`).
+- [ ] Empty states bonitos en todos los listados.
 - [ ] Accesibilidad: labels, focus rings, navegación por teclado.
+- [ ] **Auditoría visual**: revisar todo el app contra los HTMLs en `htmls/` y corregir desviaciones.
 
 ---
 
@@ -544,14 +681,14 @@ Decisión: aunque el back usa `class-validator`, en el front usamos **Zod** (com
 
 | Tipo de estado | Dónde vive | Capa |
 |---|---|---|
-| Datos del servidor (categorías, metas, pasos) | Server Components invocando use cases + `revalidateTag` | application via composition |
-| Auth (accessToken, user) | Zustand `auth-store` | presentation |
-| Cookie session | httpOnly cookie + `NextCookieSessionGateway` | infrastructure |
-| UI efímera (sidebar collapsed, theme) | Zustand `ui-store` (con persist en localStorage vía `LocalStorageAdapter`) | presentation + infrastructure |
-| Filtros de listas | Querystring (URL) + Zustand para defaults | presentation |
-| Drafts de forms | RHF (en el form) | presentation |
-| Optimistic updates | useOptimistic + use cases que calculan progreso local con `ProgressCalculator` | presentation + domain |
-| Toasts | Sonner | presentation |
+| Datos del servidor (categorías, metas, pasos) | Server Components invocando use-cases del módulo + `revalidateTag` | `modules/<feature>/application` vía `shared/composition` |
+| Auth (accessToken, user) | Zustand `modules/auth/presentation/stores/auth-store` | presentation (módulo `auth`) |
+| Cookie session | httpOnly cookie + `NextCookieSessionGateway` | `modules/auth/infrastructure` |
+| UI global efímera (sidebar collapsed, theme) | Zustand `shared/presentation/stores/ui-store` (persist en localStorage vía `shared/infrastructure/storage`) | shared presentation + infrastructure |
+| Filtros de listas | Querystring (URL) + Zustand del módulo (e.g. `goal-filters-store`) | presentation del módulo |
+| Drafts de forms | RHF (en el form) | presentation del módulo |
+| Optimistic updates | `useOptimistic` + use cases (e.g. `UpdateStepProgressUseCase`) que calculan progreso local con `ProgressCalculator` | presentation + domain del módulo |
+| Toasts | Sonner envuelto en `shared/ui-kit/molecules/Toast` | shared/ui-kit |
 
 ---
 
@@ -599,15 +736,25 @@ pnpm dev                # http://localhost:3000
 
 ---
 
-## 13. Convenciones Clean Architecture — quick reference
+## 13. Convenciones Screaming + Clean — quick reference
 
 - **¿Un componente puede hacer fetch directo?** Nunca. Siempre vía un use case obtenido del container.
-- **¿Una Server Action puede importar `infrastructure`?** No directamente; importa el `serverContainer` y obtiene los use cases ya cableados.
-- **¿Los tipos generados por OpenAPI son los del dominio?** No. Viven en `infrastructure/api/schema.d.ts` y solo los usan los gateways HTTP + mappers. El resto del código usa entidades de dominio.
+- **¿Una Server Action puede importar `infrastructure`?** No directamente; importa `serverContainer` (`@/shared/composition/server-container`) y obtiene los use cases ya cableados.
+- **¿Un módulo puede importar de otro módulo?** No. `modules/goals` no toca `modules/steps`. Si hace falta colaboración: subir a `shared/`, exponer en el `index.ts` del módulo, o componer en `composition`.
+- **¿Los tipos generados por OpenAPI son los del dominio?** No. Viven en `shared/infrastructure/api/schema.d.ts` y solo los usan los gateways HTTP + mappers de cada módulo. El resto del código usa entidades del dominio del módulo.
 - **¿Dónde va una validación nueva?**
-  - Si es **regla de negocio** (e.g., "una meta cíclica requiere periodo") → en la entidad de dominio o en el use case.
-  - Si es **forma del input** (e.g., longitud máxima del nombre) → Zod schema en `presentation/schemas`.
-- **¿Zustand en `core/`?** Nunca. Zustand es presentation.
-- **¿Server Components leyendo de Zustand?** Imposible (Zustand es client-only); usar el `serverContainer` y los use cases.
-- **¿Dónde manejo errores de red?** En el gateway HTTP — los convierte a `DomainError`. El resto del código solo conoce `DomainError`.
-- **¿Cómo hago una nueva pantalla?** 1) entidad y errores en `core/domain`. 2) gateway interface + use case en `core/application`. 3) implementación HTTP + mapper en `infrastructure`. 4) registrar en composition. 5) hook/schema/mapper en `presentation`. 6) componente y página en `app/`/`components/`.
+  - Si es **regla de negocio** (e.g., "una meta cíclica requiere periodo") → en la entidad o el use case del módulo (`modules/<feature>/domain` o `application`).
+  - Si es **forma del input** (e.g., longitud máxima del nombre) → Zod schema en `modules/<feature>/presentation/schemas`.
+- **¿Zustand en `domain` o `application`?** Nunca. Zustand es siempre `presentation` (del módulo o de `shared`).
+- **¿Server Components leyendo de Zustand?** Imposible (Zustand es client-only); usar `serverContainer` + use cases.
+- **¿Dónde manejo errores de red?** En el gateway HTTP del módulo — convierte a `DomainError` (base en `shared/domain/errors`). El resto del código solo conoce `DomainError`.
+- **¿Puedo usar `@/components/ui/button` (shadcn) en una pantalla?** No. Solo `@/shared/ui-kit/*` usa shadcn. El resto usa el ui-kit. Si falta un atom o molecule en el ui-kit, agrégalo allí primero.
+- **¿Cómo hago una nueva pantalla?**
+  1. Asegurarse de que los atoms/molecules necesarios existan en `shared/ui-kit/` (si no, atomizar del HTML de referencia primero).
+  2. `modules/<feature>/domain`: entidad y errores.
+  3. `modules/<feature>/application`: gateway interface + use case.
+  4. `modules/<feature>/infrastructure`: implementación HTTP + mapper.
+  5. Registrar en `shared/composition`.
+  6. `modules/<feature>/presentation`: schema Zod, mapper form→command, hook, organisms.
+  7. `app/.../page.tsx` y `actions.ts`: entry-points finos que importan el organism del módulo.
+- **¿Dónde añado un nuevo atom/molecule?** En `src/shared/ui-kit/atoms` o `molecules`. Si es específico de un feature (no reutilizable), va dentro del módulo: `modules/<feature>/presentation/components`.

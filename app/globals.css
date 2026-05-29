@@ -1,26 +1,137 @@
 @import "tailwindcss";
+@import "../src/shared/ui-kit/tokens.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
+/* ── Tailwind v4 theme (CSS-first config) ─────────────────────────────── */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Map AG tokens → Tailwind color utilities */
+  --color-ag-bg: var(--ag-bg);
+  --color-ag-bg-subtle: var(--ag-bg-subtle);
+  --color-ag-surface: var(--ag-surface);
+  --color-ag-surface-hover: var(--ag-surface-hover);
+  --color-ag-fg: var(--ag-fg);
+  --color-ag-fg-muted: var(--ag-fg-muted);
+  --color-ag-fg-subtle: var(--ag-fg-subtle);
+  --color-ag-fg-inverse: var(--ag-fg-inverse);
+
+  --color-ag-primary: var(--ag-primary);
+  --color-ag-primary-hover: var(--ag-primary-hover);
+  --color-ag-primary-fg: var(--ag-primary-fg);
+
+  --color-ag-lime: var(--ag-lime);
+  --color-ag-lime-fg: var(--ag-lime-fg);
+  --color-ag-amber: var(--ag-amber);
+  --color-ag-amber-fg: var(--ag-amber-fg);
+  --color-ag-pink: var(--ag-pink);
+  --color-ag-pink-fg: var(--ag-pink-fg);
+  --color-ag-blue: var(--ag-blue);
+  --color-ag-blue-fg: var(--ag-blue-fg);
+  --color-ag-crimson: var(--ag-crimson);
+
+  --color-ag-success: var(--ag-success);
+  --color-ag-success-bg: var(--ag-success-bg);
+  --color-ag-warning: var(--ag-warning);
+  --color-ag-warning-bg: var(--ag-warning-bg);
+  --color-ag-error: var(--ag-error);
+  --color-ag-error-bg: var(--ag-error-bg);
+
+  --color-ag-border: var(--ag-border);
+  --color-ag-border-strong: var(--ag-border-strong);
+
+  /* Fonts */
+  --font-mono: var(--ag-font-mono);
+  --font-sans: var(--ag-font-sans);
+
+  /* Border radii */
+  --radius-ag-xs: var(--ag-radius-xs);
+  --radius-ag-sm: var(--ag-radius-sm);
+  --radius-ag-md: var(--ag-radius-md);
+  --radius-ag-lg: var(--ag-radius-lg);
+  --radius-ag-xl: var(--ag-radius-xl);
+  --radius-ag-2xl: var(--ag-radius-2xl);
+  --radius-ag-full: var(--ag-radius-full);
+
+  /* Animations */
+  --animate-vibe-blink: vibe-blink 1.2s ease-in-out infinite;
+  --animate-vibe-pulse: vibe-pulse 2s ease-in-out infinite;
+  --animate-vibe-fade: vibe-fade 0.25s ease-out both;
+  --animate-vibe-slide-in: vibe-slide-in 0.2s ease-out both;
+  --animate-vibe-pop: vibe-pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  --animate-vibe-spin: vibe-spin 0.7s linear infinite;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ── shadcn CSS variables (mapped to AG tokens) ────────────────────────── */
+:root {
+  --background: var(--ag-bg);
+  --foreground: var(--ag-fg);
+
+  --card: var(--ag-surface);
+  --card-foreground: var(--ag-fg);
+
+  --popover: var(--ag-surface);
+  --popover-foreground: var(--ag-fg);
+
+  --primary: var(--ag-primary);
+  --primary-foreground: var(--ag-primary-fg);
+
+  --secondary: var(--ag-bg-subtle);
+  --secondary-foreground: var(--ag-fg);
+
+  --muted: var(--ag-bg-subtle);
+  --muted-foreground: var(--ag-fg-muted);
+
+  --accent: var(--ag-lime);
+  --accent-foreground: var(--ag-lime-fg);
+
+  --destructive: var(--ag-error);
+  --destructive-foreground: #ffffff;
+
+  --border: var(--ag-border);
+  --input: var(--ag-border);
+  --ring: var(--ag-ring);
+
+  --radius: var(--ag-radius-md);
+}
+
+/* ── Base styles ─────────────────────────────────────────────────────────── */
+*,
+::before,
+::after {
+  box-sizing: border-box;
+  border-color: var(--ag-border);
+}
+
+html {
+  font-family: var(--ag-font-mono);
+  background-color: var(--ag-bg);
+  color: var(--ag-fg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100vh;
+  background: var(--ag-bg);
+  color: var(--ag-fg);
+}
+
+/* ── Focus ring ─────────────────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--ag-ring);
+  outline-offset: 2px;
+}
+
+/* ── Scrollbar (Webkit) ─────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--ag-border-strong);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ag-fg-muted);
 }
