@@ -2,6 +2,7 @@
 
 import type { SessionGateway } from "@/modules/auth/application/gateways/session.gateway";
 import type { User } from "@/modules/auth/domain/entities/user";
+import { clearCachedAccessToken } from "@/shared/infrastructure/api/openapi-client";
 
 const TOKEN_KEY = "ag_access_token";
 
@@ -17,7 +18,6 @@ export class BrowserSessionGateway implements SessionGateway {
   }
 
   async clearSession(): Promise<void> {
-    if (typeof window === "undefined") return;
-    sessionStorage.removeItem(TOKEN_KEY);
+    clearCachedAccessToken();
   }
 }

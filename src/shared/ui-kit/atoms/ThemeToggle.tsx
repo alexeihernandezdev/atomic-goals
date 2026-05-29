@@ -9,8 +9,15 @@ export interface ThemeToggleProps extends React.ButtonHTMLAttributes<HTMLButtonE
 
 export function ThemeToggle({ className, ...props }: ThemeToggleProps) {
   const { resolvedTheme, setTheme } = useTheme();
+  const [mounted, setMounted] = React.useState(false);
 
-  if (!resolvedTheme) return <span className="h-8 w-8" />;
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted || !resolvedTheme) {
+    return <span className="h-8 w-8" aria-hidden />;
+  }
 
   const isDark = resolvedTheme === "dark";
 

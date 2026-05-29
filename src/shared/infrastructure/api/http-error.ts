@@ -23,7 +23,9 @@ export function mapHttpError(error: unknown): DomainError {
     ? body.message.join(", ")
     : (body.message ?? "Error del servidor.");
 
-  if (status === 401) return new UnauthorizedError();
+  if (status === 401) {
+    return new UnauthorizedError();
+  }
   if (status === 403)
     return new UnauthorizedError(
       "No tienes permiso para realizar esta acción.",
