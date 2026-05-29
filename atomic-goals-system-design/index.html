@@ -36,6 +36,10 @@
 <script type="text/babel" src="goals-list.jsx"></script>
 <script type="text/babel" src="goals-detail.jsx"></script>
 <script type="text/babel" src="categories.jsx"></script>
+<script type="text/babel" src="calendar.jsx"></script>
+<script type="text/babel" src="activity.jsx"></script>
+<script type="text/babel" src="trash.jsx"></script>
+<script type="text/babel" src="settings.jsx"></script>
 
 <script type="text/babel" data-presets="react">
   (function () {
@@ -141,6 +145,86 @@
             <div className="mobile-frame-wrap">
               <IOSDevice width={402} height={874}>
                 <CategoriesGridMobile />
+              </IOSDevice>
+            </div>
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection
+          id="calendar"
+          title="Calendario"
+          subtitle="Vista mes (default) + semana · eventos por categoría · click en día → popover · filtros · agenda mobile"
+        >
+          <DCArtboard id="cal-month-desktop" label="Calendario · mes · desktop" width={1440} height={1024}>
+            <div className="auth-mount">
+              <CalendarDesktop />
+            </div>
+          </DCArtboard>
+
+          <DCArtboard id="cal-mobile" label="Calendario · agenda · iPhone" width={460} height={940} style={{ background: '#f4f4ef' }}>
+            <div className="mobile-frame-wrap">
+              <IOSDevice width={402} height={874}>
+                <CalendarMobile />
+              </IOSDevice>
+            </div>
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection
+          id="activity"
+          title="Actividad"
+          subtitle="Feed agrupado por día con línea de tiempo · filtros por tipo · carga infinita simulada · resumen lateral"
+        >
+          <DCArtboard id="activity-desktop" label="Actividad · feed · desktop" width={1440} height={1100}>
+            <div className="auth-mount">
+              <ActivityDesktop />
+            </div>
+          </DCArtboard>
+
+          <DCArtboard id="activity-mobile" label="Actividad · iPhone" width={460} height={940} style={{ background: '#f4f4ef' }}>
+            <div className="mobile-frame-wrap">
+              <IOSDevice width={402} height={874}>
+                <ActivityMobile />
+              </IOSDevice>
+            </div>
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection
+          id="trash"
+          title="Papelera"
+          subtitle="Tabs (metas / categorías / pasos) · selección múltiple · restaurar + eliminar con confirmación · contador de expiración"
+        >
+          <DCArtboard id="trash-desktop" label="Papelera · desktop" width={1440} height={1024}>
+            <div className="auth-mount">
+              <TrashDesktop />
+            </div>
+          </DCArtboard>
+
+          <DCArtboard id="trash-mobile" label="Papelera · iPhone" width={460} height={940} style={{ background: '#f4f4ef' }}>
+            <div className="mobile-frame-wrap">
+              <IOSDevice width={402} height={874}>
+                <TrashMobile />
+              </IOSDevice>
+            </div>
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection
+          id="settings"
+          title="Configuración"
+          subtitle="Perfil · apariencia (tema + acento + comportamiento) · seguridad (cambio de contraseña + sesiones) · cerrar sesión"
+        >
+          <DCArtboard id="settings-desktop" label="Settings · desktop" width={1440} height={1100}>
+            <div className="auth-mount">
+              <SettingsDesktop />
+            </div>
+          </DCArtboard>
+
+          <DCArtboard id="settings-mobile" label="Settings · iPhone" width={460} height={940} style={{ background: '#f4f4ef' }}>
+            <div className="mobile-frame-wrap">
+              <IOSDevice width={402} height={874}>
+                <SettingsMobile />
               </IOSDevice>
             </div>
           </DCArtboard>
