@@ -8,6 +8,7 @@ import type { Category } from "@/modules/categories/domain/entities/category";
 import type { CategoryFormValues } from "../schemas/category.schema";
 import { CategoryFormSheet } from "./CategoryFormSheet";
 import { CatIcon } from "./CatIcon";
+import { clientContainer } from "@/shared/composition/client-container";
 import { DASH_PALETTES, type DashPalette } from "@/shared/presentation/palette";
 
 interface CategoryDetailScreenProps {
@@ -20,7 +21,7 @@ interface CategoryDetailScreenProps {
 }
 
 export function CategoryDetailScreen({
-  category,
+  category: initialCategory,
   updateAction,
   deleteAction,
 }: CategoryDetailScreenProps) {
@@ -34,12 +35,25 @@ export function CategoryDetailScreen({
       ? DASH_PALETTES.dark
       : DASH_PALETTES.light;
 
+  const [category, setCategory] = React.useState(initialCategory);
+  React.useEffect(() => {
+    setCategory(initialCategory);
+  }, [initialCategory]);
+
   const [showEdit, setShowEdit] = React.useState(false);
 
   const handleUpdate = async (values: CategoryFormValues) => {
     const result = await updateAction(category.id, values);
     if (result.ok) {
       setShowEdit(false);
+      try {
+        const updated = await clientContainer().categories.get.execute(
+          category.id,
+        );
+        setCategory(updated);
+      } catch {
+        /* keep current view on fetch failure */
+      }
       router.refresh();
     }
     return result;

@@ -8,6 +8,7 @@ import type { CategoryFormValues } from "../schemas/category.schema";
 import { CategoryCard } from "./CategoryCard";
 import { CategoryFormSheet } from "./CategoryFormSheet";
 import { CatIcon } from "./CatIcon";
+import { useCategories } from "../hooks/use-categories";
 import { DASH_PALETTES, type DashPalette } from "@/shared/presentation/palette";
 
 interface CategoryListScreenProps {
@@ -37,8 +38,7 @@ export function CategoryListScreen({
     ? DASH_PALETTES.dark
     : DASH_PALETTES.light;
 
-  const [categories, setCategories] =
-    React.useState<Category[]>(initialCategories);
+  const { categories, refresh } = useCategories(initialCategories);
   const [editing, setEditing] = React.useState<Category | null>(null);
   const [showNew, setShowNew] = React.useState(false);
 
@@ -58,6 +58,7 @@ export function CategoryListScreen({
     const result = await createAction(values);
     if (result.ok) {
       setShowNew(false);
+      await refresh();
       router.refresh();
     }
     return result;
@@ -68,6 +69,7 @@ export function CategoryListScreen({
     const result = await updateAction(editing.id, values);
     if (result.ok) {
       setEditing(null);
+      await refresh();
       router.refresh();
     }
     return result;
@@ -76,8 +78,8 @@ export function CategoryListScreen({
   const handleDelete = async (id: string) => {
     const result = await deleteAction(id);
     if (result.ok) {
-      setCategories((prev) => prev.filter((c) => c.id !== id));
       setEditing(null);
+      await refresh();
       router.refresh();
     }
     return result;

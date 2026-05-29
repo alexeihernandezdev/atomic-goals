@@ -9,6 +9,10 @@ export function useCategories(initial: Category[] = []) {
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
+  React.useEffect(() => {
+    setCategories(initial);
+  }, [initial]);
+
   const refresh = React.useCallback(async () => {
     setLoading(true);
     setError(null);

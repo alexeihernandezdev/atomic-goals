@@ -1,14 +1,18 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import * as React from "react";
 import type { Goal } from "@/modules/goals/domain/entities/goal";
 import { clientContainer } from "@/shared/composition/client-container";
 
 export function useGoals(initial: Goal[]) {
-  const [goals, setGoals] = useState<Goal[]>(initial);
-  const [loading, setLoading] = useState(false);
+  const [goals, setGoals] = React.useState<Goal[]>(initial);
+  const [loading, setLoading] = React.useState(false);
 
-  const refresh = useCallback(async () => {
+  React.useEffect(() => {
+    setGoals(initial);
+  }, [initial]);
+
+  const refresh = React.useCallback(async () => {
     setLoading(true);
     try {
       const result = await clientContainer().goals.list.execute();
@@ -18,7 +22,7 @@ export function useGoals(initial: Goal[]) {
     }
   }, []);
 
-  const removeGoal = useCallback((id: string) => {
+  const removeGoal = React.useCallback((id: string) => {
     setGoals((prev) => prev.filter((g) => g.id !== id));
   }, []);
 

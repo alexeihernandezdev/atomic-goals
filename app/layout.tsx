@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { JetBrains_Mono, Space_Grotesk } from "next/font/google";
-import { ThemeProvider } from "next-themes";
-import { Toaster } from "@/components/ui/sonner";
+import { Providers } from "./providers";
 import "./globals.css";
 
 const jetbrainsMono = JetBrains_Mono({
@@ -35,15 +34,7 @@ export default function RootLayout({
       className={`${jetbrainsMono.variable} ${spaceGrotesk.variable} h-full`}
     >
       <body className="min-h-full antialiased">
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          {children}
-          <Toaster richColors position="bottom-right" />
-        </ThemeProvider>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

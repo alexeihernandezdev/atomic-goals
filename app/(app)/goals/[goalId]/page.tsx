@@ -41,16 +41,10 @@ export default async function GoalDetailPage({
       categories={categories}
       updateAction={updateGoalAction}
       deleteAction={deleteGoalAction}
-      createStepAction={(instanceId, values, order) =>
-        createStepAction(instanceId, values, order)
-      }
-      updateStepProgressAction={(stepId, payload) =>
-        updateStepProgressAction(stepId, goalId, payload)
-      }
-      reorderStepAction={(stepId, newOrder) =>
-        reorderStepAction(stepId, goalId, newOrder)
-      }
-      deleteStepAction={(stepId) => deleteStepAction(stepId, goalId)}
+      createStepAction={createStepAction}
+      updateStepProgressAction={updateStepProgressAction}
+      reorderStepAction={reorderStepAction}
+      deleteStepAction={deleteStepAction}
     />
   );
 }

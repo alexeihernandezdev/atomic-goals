@@ -9,6 +9,7 @@ import { useGoalFilters } from "../stores/goal-filters-store";
 import { GoalCard } from "./GoalCard";
 import { GoalRow } from "./GoalRow";
 import { GoalFormSheet } from "./GoalFormSheet";
+import { useGoals } from "../hooks/use-goals";
 import { DASH_PALETTES, type DashPalette } from "@/shared/presentation/palette";
 
 interface GoalListScreenProps {
@@ -90,7 +91,7 @@ export function GoalListScreen({
       ? DASH_PALETTES.dark
       : DASH_PALETTES.light;
 
-  const [goals, setGoals] = React.useState<Goal[]>(initialGoals);
+  const { goals, refresh } = useGoals(initialGoals);
   const [editing, setEditing] = React.useState<Goal | null>(null);
   const [showNew, setShowNew] = React.useState(false);
 
@@ -133,8 +134,9 @@ export function GoalListScreen({
   const handleCreate = async (values: GoalFormValues) => {
     const result = await createAction(values);
     if (result.ok) {
+      setShowNew(false);
+      await refresh();
       router.refresh();
-      setGoals(initialGoals);
     }
     return result;
   };
@@ -142,14 +144,19 @@ export function GoalListScreen({
   const handleUpdate = async (values: GoalFormValues) => {
     if (!editing) return { ok: false };
     const result = await updateAction(editing.id, values);
-    if (result.ok) router.refresh();
+    if (result.ok) {
+      setEditing(null);
+      await refresh();
+      router.refresh();
+    }
     return result;
   };
 
   const handleDelete = async (id: string) => {
     const result = await deleteAction(id);
     if (result.ok) {
-      setGoals((prev) => prev.filter((g) => g.id !== id));
+      await refresh();
+      router.refresh();
     }
     return result;
   };
