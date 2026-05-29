@@ -35,6 +35,16 @@ import { RestoreStepUseCase } from "@/modules/steps/application/use-cases/restor
 import { ReorderStepUseCase } from "@/modules/steps/application/use-cases/reorder-step.use-case";
 import { HttpCalendarGateway } from "@/modules/calendar/infrastructure/http-calendar.gateway";
 import { GetCalendarEventsUseCase } from "@/modules/calendar/application/use-cases/get-calendar-events.use-case";
+import { HttpActivityGateway } from "@/modules/activity/infrastructure/http-activity.gateway";
+import { ListActivityUseCase } from "@/modules/activity/application/use-cases/list-activity.use-case";
+import { HttpTrashGateway } from "@/modules/trash/infrastructure/http-trash.gateway";
+import { ListTrashUseCase } from "@/modules/trash/application/use-cases/list-trash.use-case";
+import { RestoreItemUseCase } from "@/modules/trash/application/use-cases/restore-item.use-case";
+import { PermanentDeleteUseCase } from "@/modules/trash/application/use-cases/permanent-delete.use-case";
+import { HttpSettingsGateway } from "@/modules/settings/infrastructure/http-settings.gateway";
+import { UpdateProfileUseCase } from "@/modules/settings/application/use-cases/update-profile.use-case";
+import { ChangePasswordUseCase } from "@/modules/settings/application/use-cases/change-password.use-case";
+import { GetProfileUseCase } from "@/modules/settings/application/use-cases/get-profile.use-case";
 import { createServerClient } from "@/shared/infrastructure/api/server-client";
 
 export interface AuthUseCases {
@@ -75,6 +85,22 @@ export interface CalendarUseCases {
   getEvents: GetCalendarEventsUseCase;
 }
 
+export interface ActivityUseCases {
+  list: ListActivityUseCase;
+}
+
+export interface TrashUseCases {
+  listAll: ListTrashUseCase;
+  restore: RestoreItemUseCase;
+  permanentDelete: PermanentDeleteUseCase;
+}
+
+export interface SettingsUseCases {
+  getProfile: GetProfileUseCase;
+  updateProfile: UpdateProfileUseCase;
+  changePassword: ChangePasswordUseCase;
+}
+
 export interface StepUseCases {
   list: ListStepsUseCase;
   create: CreateStepUseCase;
@@ -92,6 +118,9 @@ export interface ServerContainer {
   steps: StepUseCases;
   dashboard: DashboardUseCases;
   calendar: CalendarUseCases;
+  activity: ActivityUseCases;
+  trash: TrashUseCases;
+  settings: SettingsUseCases;
   health: { check: () => Promise<{ ok: boolean; timestamp: string }> };
 }
 
@@ -107,6 +136,9 @@ export async function serverContainer(): Promise<ServerContainer> {
   const stepGateway = new HttpStepGateway(httpClient);
   const dashboardGateway = new HttpDashboardGateway(httpClient);
   const calendarGateway = new HttpCalendarGateway(httpClient);
+  const activityGateway = new HttpActivityGateway(httpClient);
+  const trashGateway = new HttpTrashGateway(httpClient);
+  const settingsGateway = new HttpSettingsGateway(httpClient);
 
   return {
     auth: {
@@ -150,6 +182,19 @@ export async function serverContainer(): Promise<ServerContainer> {
     },
     calendar: {
       getEvents: new GetCalendarEventsUseCase(calendarGateway),
+    },
+    activity: {
+      list: new ListActivityUseCase(activityGateway),
+    },
+    trash: {
+      listAll: new ListTrashUseCase(trashGateway),
+      restore: new RestoreItemUseCase(trashGateway),
+      permanentDelete: new PermanentDeleteUseCase(trashGateway),
+    },
+    settings: {
+      getProfile: new GetProfileUseCase(settingsGateway),
+      updateProfile: new UpdateProfileUseCase(settingsGateway),
+      changePassword: new ChangePasswordUseCase(settingsGateway),
     },
     health: {
       check: async () => ({ ok: true, timestamp: new Date().toISOString() }),
