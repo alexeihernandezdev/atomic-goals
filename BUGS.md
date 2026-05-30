@@ -1,0 +1,1 @@
+- [ ] Error de consola nextjs: coming failed: ValidationError: Internal server error
