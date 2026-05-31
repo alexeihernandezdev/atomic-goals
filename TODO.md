@@ -9,3 +9,5 @@
 - [ ] la vista de metas se debe poder filtrar por solo las metas de las categorias
 - [ ] Poder crear meta desde categoria
 - [ ] Una meta ciclica cuando termina el periodo se crea una nueva con los mismos pasos, pero deberia haber un registro para poder ver su pogreso general -[ ]
+- [ ] Poder aumentar el contador de forma mas rapida
+- [ ] El inicio y fin en una meta no tiene mucho sentido, debe estar determinado por el inicio del primer paso y del ultimo paso
