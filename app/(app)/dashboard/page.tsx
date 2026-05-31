@@ -1,6 +1,7 @@
 import { serverContainer } from "@/shared/composition/server-container";
 import { DashboardScreen } from "@/modules/dashboard";
 import type { TimelineRange, DashboardSummary, TimelineData } from "@/modules/dashboard";
+import { redirectIfUnauthorized } from "@/shared/presentation/auth/session-expired";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Dashboard — Atomic Goals" };
@@ -26,12 +27,34 @@ export default async function DashboardPage({
 
   const container = await serverContainer();
 
+  const handleFetchError = async (source: string, e: unknown) => {
+    await redirectIfUnauthorized(e, "/dashboard");
+    console.error(`[dashboard] ${source} failed:`, e);
+    return null;
+  };
+
   const [user, summary, timeline, upcoming, activity] = await Promise.all([
     container.auth.getCurrentUser.execute().catch(() => null),
-    container.dashboard.getSummary.execute().catch((e: unknown) => { console.error("[dashboard] summary failed:", e); return null; }),
-    container.dashboard.getTimeline.execute(timelineRange).catch((e: unknown) => { console.error("[dashboard] timeline failed:", e); return null; }),
-    container.dashboard.getUpcoming.execute().catch((e: unknown) => { console.error("[dashboard] upcoming failed:", e); return []; }),
-    container.dashboard.getActivity.execute().catch((e: unknown) => { console.error("[dashboard] activity failed:", e); return { items: [], nextCursor: null }; }),
+    container.dashboard.getSummary
+      .execute()
+      .catch((e: unknown) => handleFetchError("summary", e)),
+    container.dashboard.getTimeline
+      .execute(timelineRange)
+      .catch((e: unknown) => handleFetchError("timeline", e)),
+    container.dashboard.getUpcoming
+      .execute()
+      .catch(async (e: unknown) => {
+        await redirectIfUnauthorized(e, "/dashboard");
+        console.error("[dashboard] upcoming failed:", e);
+        return [];
+      }),
+    container.dashboard.getActivity
+      .execute()
+      .catch(async (e: unknown) => {
+        await redirectIfUnauthorized(e, "/dashboard");
+        console.error("[dashboard] activity failed:", e);
+        return { items: [], nextCursor: null };
+      }),
   ]);
 
   return (

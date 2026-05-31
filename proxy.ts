@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { isJwtExpired } from "@/shared/infrastructure/auth/jwt";
 
 const PUBLIC_PATHS = ["/login", "/register", "/forgot-password"];
 
@@ -17,9 +18,9 @@ export async function proxy(request: NextRequest) {
 
   const accessToken = request.cookies.get("access_token")?.value;
   const refreshToken = request.cookies.get("refresh_token")?.value;
+  const hasValidAccess = Boolean(accessToken && !isJwtExpired(accessToken));
 
-  // Valid access token — proceed normally
-  if (accessToken) {
+  if (hasValidAccess) {
     if (isPublic) {
       const dashboardUrl = request.nextUrl.clone();
       dashboardUrl.pathname = "/dashboard";
@@ -28,7 +29,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // No access token but have a refresh token — try to get a new access token silently
+  // Missing or expired access token — try silent refresh
   if (refreshToken && !isPublic) {
     try {
       const refreshUrl = new URL("/api/auth/refresh", request.nextUrl.origin);
@@ -48,7 +49,6 @@ export async function proxy(request: NextRequest) {
             secure,
             maxAge: 60 * 60,
           });
-          // Forward rotated refresh_token if the route returned one
           const setCookieHeader = refreshRes.headers.get("set-cookie") ?? "";
           const rotatedMatch = setCookieHeader.match(/refresh_token=([^;]+)/);
           if (rotatedMatch) {
@@ -66,11 +66,11 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  // Not authenticated
   if (!isPublic) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/login";
     loginUrl.searchParams.set("from", pathname);
+    loginUrl.searchParams.set("reason", "session-expired");
     return NextResponse.redirect(loginUrl);
   }
 

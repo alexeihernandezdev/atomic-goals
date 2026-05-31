@@ -1,15 +1,14 @@
 "use client";
 
+import { useLogout } from "@/modules/auth/presentation/hooks/use-logout";
 import { useAuthStore } from "@/modules/auth/presentation/stores/auth-store";
 import { cn } from "@/shared/presentation/utils/cn";
 import { LogOut } from "lucide-react";
-import { useRouter } from "next/navigation";
 import * as React from "react";
-import { toast } from "sonner";
 
 export function UserMenu() {
-  const router = useRouter();
-  const { user, clearAuth } = useAuthStore();
+  const { user } = useAuthStore();
+  const { logout } = useLogout();
   const [open, setOpen] = React.useState(false);
   const ref = React.useRef<HTMLDivElement>(null);
 
@@ -22,17 +21,6 @@ export function UserMenu() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  const handleLogout = async () => {
-    try {
-      await fetch("/api/auth/logout", { method: "POST" });
-      clearAuth();
-      router.push("/login");
-      router.refresh();
-    } catch {
-      toast.error("Error al cerrar sesión.");
-    }
-  };
 
   const initials = user?.name
     ? user.name
@@ -88,7 +76,7 @@ export function UserMenu() {
           </div>
           <div className="py-1">
             <button
-              onClick={handleLogout}
+              onClick={() => void logout()}
               role="menuitem"
               className={cn(
                 "flex items-center gap-2.5 w-full px-4 py-2.5",
