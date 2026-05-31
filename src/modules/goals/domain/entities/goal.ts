@@ -59,6 +59,7 @@ export interface UpdateGoalCommand {
 export interface CategoryOption {
   id: string;
   name: string;
+  color?: string;
 }
 
 export interface ListGoalsQuery {

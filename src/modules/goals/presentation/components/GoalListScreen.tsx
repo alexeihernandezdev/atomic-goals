@@ -91,6 +91,11 @@ export function GoalListScreen({
       ? DASH_PALETTES.dark
       : DASH_PALETTES.light;
 
+  const categoryColorMap = React.useMemo(
+    () => Object.fromEntries(categories.map((c) => [c.id, c.color ?? ""])),
+    [categories],
+  );
+
   const { goals, refresh } = useGoals(initialGoals);
   const [editing, setEditing] = React.useState<Goal | null>(null);
   const [showNew, setShowNew] = React.useState(false);
@@ -477,6 +482,7 @@ export function GoalListScreen({
               key={g.id}
               goal={g}
               palette={palette}
+              categoryColor={categoryColorMap[g.categoryId]}
               onClick={() => router.push(`/goals/${g.id}`)}
             />
           ))}
@@ -562,6 +568,7 @@ export function GoalListScreen({
               key={g.id}
               goal={g}
               palette={palette}
+              categoryColor={categoryColorMap[g.categoryId]}
               onClick={() => router.push(`/goals/${g.id}`)}
             />
           ))}

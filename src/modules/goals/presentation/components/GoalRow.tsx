@@ -14,13 +14,15 @@ const STATUS_LABEL: Record<string, string> = {
 interface GoalRowProps {
   goal: Goal;
   palette: DashPalette;
+  categoryColor?: string;
   onClick?: () => void;
 }
 
-export function GoalRow({ goal, palette, onClick }: GoalRowProps) {
+export function GoalRow({ goal, palette, categoryColor, onClick }: GoalRowProps) {
   const instance = goal.activeInstance;
   const progress = instance?.progress ?? 0;
   const status = instance?.status ?? "IN_PROGRESS";
+  const accentColor = categoryColor ?? palette.primary;
   const [hovered, setHovered] = React.useState(false);
 
   return (
@@ -40,7 +42,7 @@ export function GoalRow({ goal, palette, onClick }: GoalRowProps) {
         transition: "background .12s",
       }}
     >
-      <div style={{ alignSelf: "stretch", background: palette.primary }} />
+      <div style={{ alignSelf: "stretch", background: accentColor }} />
       <div style={{ minWidth: 0 }}>
         <div
           style={{
@@ -109,7 +111,7 @@ export function GoalRow({ goal, palette, onClick }: GoalRowProps) {
               top: 0,
               bottom: 0,
               width: `${progress}%`,
-              background: palette.primary,
+              background: accentColor,
             }}
           />
         </div>

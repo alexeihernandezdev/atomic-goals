@@ -27,11 +27,12 @@ const CYCLE_PERIOD_LABEL: Record<string, string> = {
 interface GoalCardProps {
   goal: Goal;
   palette: DashPalette;
+  categoryColor?: string;
   compact?: boolean;
   onClick?: () => void;
 }
 
-export function GoalCard({ goal, palette, compact, onClick }: GoalCardProps) {
+export function GoalCard({ goal, palette, categoryColor, compact, onClick }: GoalCardProps) {
   const instance = goal.activeInstance;
   const progress = instance?.progress ?? 0;
   const status = instance?.status ?? "IN_PROGRESS";
@@ -39,13 +40,15 @@ export function GoalCard({ goal, palette, compact, onClick }: GoalCardProps) {
   const isArchived = status === "ARCHIVED";
   const isFailed = status === "FAILED";
 
+  const accentColor = categoryColor ?? palette.primary;
+
   const typeLabel =
     TYPE_LABEL[goal.type] +
     (goal.type === "CYCLIC" && goal.cyclePeriod
       ? ` · ${CYCLE_PERIOD_LABEL[goal.cyclePeriod] ?? goal.cyclePeriod}`
       : "");
 
-  const progressColor = isCompleted ? palette.lime : goal.categoryId ? palette.primary : palette.primary;
+  const progressColor = isCompleted ? palette.lime : accentColor;
 
   return (
     <div
@@ -61,7 +64,7 @@ export function GoalCard({ goal, palette, compact, onClick }: GoalCardProps) {
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.transform = "translate(-2px, -2px)";
-        e.currentTarget.style.boxShadow = `4px 4px 0 0 ${palette.primary}`;
+        e.currentTarget.style.boxShadow = `4px 4px 0 0 ${accentColor}`;
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.transform = "";
@@ -72,7 +75,7 @@ export function GoalCard({ goal, palette, compact, onClick }: GoalCardProps) {
       <div
         style={{
           height: 8,
-          background: palette.primary,
+          background: accentColor,
           borderBottom: `1.5px solid ${palette.line}`,
         }}
       />
@@ -100,7 +103,7 @@ export function GoalCard({ goal, palette, compact, onClick }: GoalCardProps) {
             }}
           >
             <span
-              style={{ width: 8, height: 8, background: palette.primary }}
+              style={{ width: 8, height: 8, background: accentColor }}
             />
             {typeLabel}
           </div>
