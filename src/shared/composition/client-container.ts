@@ -20,6 +20,12 @@ import { UpdateGoalUseCase } from "@/modules/goals/application/use-cases/update-
 import { DeleteGoalUseCase } from "@/modules/goals/application/use-cases/delete-goal.use-case";
 import { HttpCalendarGateway } from "@/modules/calendar/infrastructure/http-calendar.gateway";
 import { GetCalendarEventsUseCase } from "@/modules/calendar/application/use-cases/get-calendar-events.use-case";
+import { HttpActivityGateway } from "@/modules/activity/infrastructure/http-activity.gateway";
+import { ListActivityUseCase } from "@/modules/activity/application/use-cases/list-activity.use-case";
+import { HttpTrashGateway } from "@/modules/trash/infrastructure/http-trash.gateway";
+import { ListTrashUseCase } from "@/modules/trash/application/use-cases/list-trash.use-case";
+import { RestoreItemUseCase } from "@/modules/trash/application/use-cases/restore-item.use-case";
+import { PermanentDeleteUseCase } from "@/modules/trash/application/use-cases/permanent-delete.use-case";
 import { apiClient } from "@/shared/infrastructure/api/openapi-client";
 
 export interface AuthUseCases {
@@ -49,11 +55,23 @@ export interface CalendarUseCases {
   getEvents: GetCalendarEventsUseCase;
 }
 
+export interface ActivityUseCases {
+  list: ListActivityUseCase;
+}
+
+export interface TrashUseCases {
+  listAll: ListTrashUseCase;
+  restore: RestoreItemUseCase;
+  permanentDelete: PermanentDeleteUseCase;
+}
+
 export interface ClientContainer {
   auth: AuthUseCases;
   categories: CategoryUseCases;
   goals: GoalUseCases;
   calendar: CalendarUseCases;
+  activity: ActivityUseCases;
+  trash: TrashUseCases;
 }
 
 let _container: ClientContainer | null = null;
@@ -67,6 +85,8 @@ export function clientContainer(): ClientContainer {
     const categoryGateway = new HttpCategoryGateway(client);
     const goalGateway = new HttpGoalGateway(client);
     const calendarGateway = new HttpCalendarGateway(client);
+    const activityGateway = new HttpActivityGateway(client);
+    const trashGateway = new HttpTrashGateway(client);
 
     _container = {
       auth: {
@@ -91,6 +111,14 @@ export function clientContainer(): ClientContainer {
       },
       calendar: {
         getEvents: new GetCalendarEventsUseCase(calendarGateway),
+      },
+      activity: {
+        list: new ListActivityUseCase(activityGateway),
+      },
+      trash: {
+        listAll: new ListTrashUseCase(trashGateway),
+        restore: new RestoreItemUseCase(trashGateway),
+        permanentDelete: new PermanentDeleteUseCase(trashGateway),
       },
     };
   }

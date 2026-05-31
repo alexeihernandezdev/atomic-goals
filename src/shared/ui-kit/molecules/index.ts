@@ -18,3 +18,6 @@ export type { StreakWeekProps, StreakDay } from "./StreakWeek";
 
 export { CategoryProgressRow } from "./CategoryProgressRow";
 export type { CategoryProgressRowProps } from "./CategoryProgressRow";
+
+export { ConfirmDialog } from "./ConfirmDialog";
+export type { ConfirmDialogProps } from "./ConfirmDialog";

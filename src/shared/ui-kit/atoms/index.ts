@@ -33,3 +33,6 @@ export type { StreakDotProps, StreakDotState } from "./StreakDot";
 
 export { ThemeToggle } from "./ThemeToggle";
 export type { ThemeToggleProps } from "./ThemeToggle";
+
+export { Skeleton } from "./Skeleton";
+export type { SkeletonProps } from "./Skeleton";
