@@ -1,1 +1,2 @@
 - [ ] Error de consola nextjs: coming failed: ValidationError: Internal server error
+- [x] Metas no salen dentro de categorias

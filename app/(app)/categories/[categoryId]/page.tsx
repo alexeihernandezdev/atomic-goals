@@ -15,15 +15,17 @@ export default async function CategoryDetailPage({
   const { categoryId } = await params;
   const container = await serverContainer();
 
-  const category = await container.categories.get
-    .execute(categoryId)
-    .catch(() => null);
+  const [category, goals] = await Promise.all([
+    container.categories.get.execute(categoryId).catch(() => null),
+    container.goals.list.execute({ categoryId }).catch(() => []),
+  ]);
 
   if (!category) notFound();
 
   return (
     <CategoryDetailScreen
       category={category}
+      initialGoals={goals}
       updateAction={updateCategoryAction}
       deleteAction={deleteCategoryAction}
     />

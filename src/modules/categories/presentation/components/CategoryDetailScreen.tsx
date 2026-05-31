@@ -10,9 +10,12 @@ import { CategoryFormSheet } from "./CategoryFormSheet";
 import { CatIcon } from "./CatIcon";
 import { clientContainer } from "@/shared/composition/client-container";
 import { DASH_PALETTES, type DashPalette } from "@/shared/presentation/palette";
+import type { Goal } from "@/modules/goals/domain/entities/goal";
+import { GoalCard } from "@/modules/goals";
 
 interface CategoryDetailScreenProps {
   category: Category;
+  initialGoals: Goal[];
   updateAction: (
     id: string,
     values: CategoryFormValues,
@@ -22,6 +25,7 @@ interface CategoryDetailScreenProps {
 
 export function CategoryDetailScreen({
   category: initialCategory,
+  initialGoals,
   updateAction,
   deleteAction,
 }: CategoryDetailScreenProps) {
@@ -333,7 +337,7 @@ export function CategoryDetailScreen({
           ))}
         </div>
 
-        {/* Goals placeholder — Phase 3 will add real GoalList */}
+        {/* Goals section */}
         <div
           style={{
             display: "flex",
@@ -363,7 +367,7 @@ export function CategoryDetailScreen({
                 letterSpacing: "-0.015em",
               }}
             >
-              {category.goalCount} meta{category.goalCount !== 1 ? "s" : ""}
+              {initialGoals.length} meta{initialGoals.length !== 1 ? "s" : ""}
             </div>
           </div>
           <Link
@@ -382,7 +386,7 @@ export function CategoryDetailScreen({
           </Link>
         </div>
 
-        {category.goalCount === 0 && (
+        {initialGoals.length === 0 ? (
           <div
             style={{
               border: `1.5px dashed ${palette.lineSoft}`,
@@ -396,6 +400,24 @@ export function CategoryDetailScreen({
             }}
           >
             sin metas aún · añade una desde /metas
+          </div>
+        ) : (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+              gap: 14,
+            }}
+          >
+            {initialGoals.map((goal) => (
+              <GoalCard
+                key={goal.id}
+                goal={goal}
+                palette={palette}
+                compact
+                onClick={() => router.push(`/goals/${goal.id}`)}
+              />
+            ))}
           </div>
         )}
       </div>
