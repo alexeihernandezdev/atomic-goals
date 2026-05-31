@@ -41,7 +41,7 @@ export class GoalMapper {
       cycleStart: raw.cycleStart,
       cycleEnd: raw.cycleEnd,
       status: raw.status as GoalInstanceStatus,
-      progress: raw.progress,
+      progress: Math.round(raw.progress ?? 0),
       completedAt: raw.completedAt ?? null,
       createdAt: raw.createdAt,
       updatedAt: raw.updatedAt,

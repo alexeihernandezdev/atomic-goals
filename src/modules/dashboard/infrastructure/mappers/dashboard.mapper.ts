@@ -135,7 +135,7 @@ export class DashboardMapper {
       name: c.name ?? c.categoryName ?? "",
       color: c.color ?? c.categoryColor ?? "#888",
       goalsCount: c.goalsCount ?? c.goals ?? 0,
-      avgProgress: c.avgProgress ?? c.averageProgress ?? c.progress ?? 0,
+      avgProgress: Math.round(c.avgProgress ?? c.averageProgress ?? c.progress ?? 0),
     }));
 
     return { streak: mappedStreak, stats: mappedStats, categories: mappedCategories };
@@ -166,7 +166,7 @@ export class DashboardMapper {
       categoryColor: raw.categoryColor ?? raw.color ?? "#888",
       dueDate: raw.dueDate ?? raw.endDate ?? null,
       dueLabel: raw.dueLabel ?? null,
-      progress: raw.progress ?? 0,
+      progress: Math.round(raw.progress ?? 0),
       goalType: (raw.goalType ?? raw.type ?? "CONCLUSIVE") as "CONCLUSIVE" | "CYCLIC",
     };
   }
