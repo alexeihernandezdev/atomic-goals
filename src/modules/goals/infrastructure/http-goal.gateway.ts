@@ -37,7 +37,7 @@ export class HttpGoalGateway implements GoalGateway {
 
   async list(query?: ListGoalsQuery): Promise<Goal[]> {
     const { data, error } = await this.client.GET("/goals", {
-      params: query as Record<string, unknown>,
+      params: { query },
     });
     if (error) throw mapHttpError(error);
     return unwrap<RawGoal[]>(data).map(GoalMapper.toDomain);
