@@ -83,7 +83,6 @@ export class HttpAuthGateway implements AuthGateway {
     const raw = unwrap<{ accessToken: string }>(data);
     return {
       accessToken: raw.accessToken,
-      user: undefined as unknown as User,
       refreshToken: extractRefreshToken(response),
     };
   }

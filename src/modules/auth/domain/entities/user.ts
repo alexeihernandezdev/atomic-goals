@@ -17,7 +17,7 @@ export interface RegisterCommand {
 }
 
 export interface AuthResult {
-  user: User;
+  user?: User;
   accessToken: string;
   refreshToken?: string;
 }
