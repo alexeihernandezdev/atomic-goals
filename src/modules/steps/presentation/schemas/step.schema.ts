@@ -1,5 +1,14 @@
 import { z } from "zod";
 
+// React Hook Form with valueAsNumber submits NaN for empty number inputs.
+// This converts NaN → undefined so optional fields validate correctly when
+// the user switches between step types (e.g. PROGRESS_BAR → CHECK).
+const nanToUndefined = (v: unknown) =>
+  typeof v === "number" && isNaN(v) ? undefined : v;
+
+const optionalNum = (inner: z.ZodNumber) =>
+  z.preprocess(nanToUndefined, inner.optional());
+
 const statusOptionSchema = z.object({
   label: z.string().min(1, "El nombre del estado es obligatorio"),
   percentage: z.number().min(0).max(100),
@@ -13,17 +22,17 @@ export const createStepSchema = z
     description: z.string().max(1000).optional(),
     weight: z.number().min(0.1).max(100),
     // PROGRESS_BAR fields
-    target: z.number().min(1).optional(),
+    target: optionalNum(z.number().min(1)),
     unit: z.string().max(20).optional(),
     // COUNTER fields
-    max: z.number().min(1).optional(),
-    min: z.number().min(0).optional(),
+    max: optionalNum(z.number().min(1)),
+    min: optionalNum(z.number().min(0)),
     // STATUS fields
     statuses: z.array(statusOptionSchema).min(2).optional(),
     // dates
     startDate: z.string().optional(),
     endDate: z.string().optional(),
-    estimatedDurationMinutes: z.number().int().min(1).optional(),
+    estimatedDurationMinutes: optionalNum(z.number().int().min(1)),
   })
   .superRefine((data, ctx) => {
     if (data.type === "PROGRESS_BAR" && !data.target) {
