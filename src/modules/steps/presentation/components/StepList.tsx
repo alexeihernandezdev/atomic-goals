@@ -55,10 +55,37 @@ interface StepListProps {
   ) => Promise<{ ok: boolean; step?: Step; message?: string }>;
 }
 
+const WEEK_DAYS_ES = [
+  "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo",
+];
+
+function formatCycleDayLabel(
+  cycleDay: string | null | undefined,
+  cyclePeriod?: CyclePeriod,
+  customCycleDays?: number | null,
+): string | null {
+  if (!cycleDay || !cyclePeriod) return null;
+  if (cyclePeriod === "WEEKLY") return WEEK_DAYS_ES[Number(cycleDay) - 1] ?? cycleDay;
+  if (cyclePeriod === "MONTHLY") return `Día ${cycleDay}`;
+  if (cyclePeriod === "YEARLY") {
+    try {
+      return new Date(cycleDay).toLocaleDateString("es", { day: "numeric", month: "short" });
+    } catch {
+      return cycleDay;
+    }
+  }
+  if (cyclePeriod === "CUSTOM_DAYS") {
+    return `Día ${cycleDay}${customCycleDays ? `/${customCycleDays}` : ""}`;
+  }
+  return null;
+}
+
 interface SortableStepProps {
   step: Step;
   palette: DashPalette;
   accentColor: string;
+  cycleInfo?: string | null;
+  estimatedMinutes?: number | null;
   onProgressChange: (
     stepId: string,
     payload: { current?: number; done?: boolean; currentStatusId?: string },
@@ -71,6 +98,8 @@ function SortableStep({
   step,
   palette,
   accentColor,
+  cycleInfo,
+  estimatedMinutes,
   onProgressChange,
   onEdit,
   onDelete,
@@ -98,6 +127,8 @@ function SortableStep({
     palette,
     accentColor,
     dragHandleProps,
+    cycleInfo,
+    estimatedMinutes,
     onEdit: () => onEdit(step),
     onDelete: () => onDelete(step.id),
   };
@@ -351,6 +382,8 @@ export function StepList({
                   step={step}
                   palette={palette}
                   accentColor={accentColor}
+                  cycleInfo={formatCycleDayLabel(step.cycleDay, cyclePeriod, customCycleDays)}
+                  estimatedMinutes={step.estimatedDurationMinutes ?? null}
                   onProgressChange={(id, payload) =>
                     updateProgress(id, payload)
                   }

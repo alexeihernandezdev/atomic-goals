@@ -10,6 +10,8 @@ interface CheckStepProps {
   palette: DashPalette;
   accentColor: string;
   dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
+  cycleInfo?: string | null;
+  estimatedMinutes?: number | null;
   onProgressChange: (done: boolean) => void;
   onEdit?: () => void;
   onDelete?: () => void;
@@ -20,6 +22,8 @@ export function CheckStep({
   palette,
   accentColor,
   dragHandleProps,
+  cycleInfo,
+  estimatedMinutes,
   onProgressChange,
   onEdit,
   onDelete,
@@ -51,6 +55,8 @@ export function CheckStep({
       badge="check"
       weight={step.weight}
       due={due}
+      cycleInfo={cycleInfo}
+      estimatedMinutes={estimatedMinutes}
       percent={done ? 100 : 0}
       dragHandleProps={dragHandleProps}
       onEdit={onEdit}

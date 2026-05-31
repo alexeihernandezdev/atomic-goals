@@ -11,6 +11,8 @@ interface StatusStepProps {
   palette: DashPalette;
   accentColor: string;
   dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
+  cycleInfo?: string | null;
+  estimatedMinutes?: number | null;
   onProgressChange: (statusId: string) => void;
   onEdit?: () => void;
   onDelete?: () => void;
@@ -21,6 +23,8 @@ export function StatusStep({
   palette,
   accentColor,
   dragHandleProps,
+  cycleInfo,
+  estimatedMinutes,
   onProgressChange,
   onEdit,
   onDelete,
@@ -53,6 +57,8 @@ export function StatusStep({
       badge="estados"
       weight={step.weight}
       due={due}
+      cycleInfo={cycleInfo}
+      estimatedMinutes={estimatedMinutes}
       percent={percent}
       dragHandleProps={dragHandleProps}
       onEdit={onEdit}

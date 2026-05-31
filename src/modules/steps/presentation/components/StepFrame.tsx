@@ -10,6 +10,8 @@ interface StepFrameProps {
   badge: string;
   weight: number;
   due?: string | null;
+  cycleInfo?: string | null;
+  estimatedMinutes?: number | null;
   percent: number;
   dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
   onEdit?: () => void;
@@ -24,6 +26,8 @@ export function StepFrame({
   badge,
   weight,
   due,
+  cycleInfo,
+  estimatedMinutes,
   percent,
   dragHandleProps,
   onEdit,
@@ -156,6 +160,8 @@ export function StepFrame({
         >
           <span>peso · {weight}</span>
           {due && <span>vence · {due}</span>}
+          {cycleInfo && <span>{cycleInfo}</span>}
+          {estimatedMinutes && <span>~{estimatedMinutes} min</span>}
         </div>
         {children}
       </div>

@@ -11,6 +11,8 @@ interface ProgressBarStepProps {
   palette: DashPalette;
   accentColor: string;
   dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
+  cycleInfo?: string | null;
+  estimatedMinutes?: number | null;
   onProgressChange: (current: number) => void;
   onEdit?: () => void;
   onDelete?: () => void;
@@ -21,6 +23,8 @@ export function ProgressBarStep({
   palette,
   accentColor,
   dragHandleProps,
+  cycleInfo,
+  estimatedMinutes,
   onProgressChange,
   onEdit,
   onDelete,
@@ -54,6 +58,8 @@ export function ProgressBarStep({
       badge="barra de progreso"
       weight={step.weight}
       due={due}
+      cycleInfo={cycleInfo}
+      estimatedMinutes={estimatedMinutes}
       percent={percent}
       dragHandleProps={dragHandleProps}
       onEdit={onEdit}
