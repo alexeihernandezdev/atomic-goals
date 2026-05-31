@@ -226,13 +226,11 @@ export function StepList({
     const result = await updateMetadataAction(editingStep.id, values);
     setSaving(false);
     if (result.ok && result.step) {
-      setSteps((prev) => {
-        const next = prev.map((s) =>
-          s.id === result.step!.id ? result.step! : s,
-        );
-        onStepsChange?.(next);
-        return next;
-      });
+      const next = steps.map((s) =>
+        s.id === result.step!.id ? result.step! : s,
+      );
+      setSteps(next);
+      onStepsChange?.(next);
       setEditingStep(null);
     }
     return result;
@@ -243,11 +241,9 @@ export function StepList({
     const result = await createAction(goalInstanceId, values, steps.length);
     setCreating(false);
     if (result.ok && result.step) {
-      setSteps((prev) => {
-        const next = [...prev, result.step!];
-        onStepsChange?.(next);
-        return next;
-      });
+      const next = [...steps, result.step!];
+      setSteps(next);
+      onStepsChange?.(next);
       setAddOpen(false);
     }
     return result;

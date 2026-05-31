@@ -42,22 +42,19 @@ export function useSteps(initialSteps: Step[], actions: StepActions) {
     stepId: string,
     payload: { current?: number; done?: boolean; currentStatusId?: string },
   ) => {
-    let nextSteps: Step[] = [];
-    setSteps((prev) => {
-      nextSteps = prev.map((s) => {
-        if (s.id !== stepId) return s;
-        if (s.type === "PROGRESS_BAR" && payload.current !== undefined)
-          return { ...s, current: payload.current };
-        if (s.type === "CHECK" && payload.done !== undefined)
-          return { ...s, done: payload.done };
-        if (s.type === "STATUS" && payload.currentStatusId !== undefined)
-          return { ...s, currentStatusId: payload.currentStatusId };
-        if (s.type === "COUNTER" && payload.current !== undefined)
-          return { ...s, current: payload.current };
-        return s;
-      });
-      return nextSteps;
+    const nextSteps = steps.map((s) => {
+      if (s.id !== stepId) return s;
+      if (s.type === "PROGRESS_BAR" && payload.current !== undefined)
+        return { ...s, current: payload.current };
+      if (s.type === "CHECK" && payload.done !== undefined)
+        return { ...s, done: payload.done };
+      if (s.type === "STATUS" && payload.currentStatusId !== undefined)
+        return { ...s, currentStatusId: payload.currentStatusId };
+      if (s.type === "COUNTER" && payload.current !== undefined)
+        return { ...s, current: payload.current };
+      return s;
     });
+    setSteps(nextSteps);
     actions.onStepsChange?.(nextSteps);
 
     markPending(stepId);
