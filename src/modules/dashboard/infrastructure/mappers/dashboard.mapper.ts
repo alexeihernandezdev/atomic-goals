@@ -23,6 +23,7 @@ interface RawCategory {
   categoryColor?: string;
   goalsCount?: number;
   goals?: number;
+  goalCount?: number;
   avgProgress?: number;
   averageProgress?: number;
   progress?: number;
@@ -44,11 +45,18 @@ interface RawSummary {
   stats?: RawStats;
   categories?: RawCategory[];
   categoryBreakdown?: RawCategory[];
+  // flat format from backend
+  totalGoals?: number;
+  completedGoals?: number;
+  inProgressGoals?: number;
+  byCategory?: RawCategory[];
+  currentStreak?: number;
 }
 
 interface RawTimelinePoint {
   date?: string;
   completedSteps?: number;
+  completedCount?: number;
   count?: number;
   value?: number;
 }
@@ -80,6 +88,10 @@ interface RawUpcoming {
   progress?: number;
   goalType?: string;
   type?: string;
+  // flat format from backend
+  entityId?: string;
+  entityType?: string;
+  title?: string;
 }
 
 interface RawActivity {
@@ -105,27 +117,27 @@ interface RawActivityPage {
 
 export class DashboardMapper {
   static summaryToDomain(raw: RawSummary): DashboardSummary {
-    const streak = raw.streak ?? {};
+    const streakObj = raw.streak ?? {};
     const stats = raw.stats ?? {};
-    const cats = raw.categories ?? raw.categoryBreakdown ?? [];
+    const cats = raw.categories ?? raw.categoryBreakdown ?? raw.byCategory ?? [];
 
     const weekActivity: boolean[] = (() => {
-      if (Array.isArray(streak.weekActivity)) return streak.weekActivity;
-      if (Array.isArray(streak.weeklyActivity))
-        return streak.weeklyActivity.map((v) => v === 1);
+      if (Array.isArray(streakObj.weekActivity)) return streakObj.weekActivity;
+      if (Array.isArray(streakObj.weeklyActivity))
+        return streakObj.weeklyActivity.map((v) => v === 1);
       return [false, false, false, false, false, false, false];
     })();
 
     const mappedStreak: StreakData = {
-      current: streak.current ?? streak.currentStreak ?? 0,
-      record: streak.record ?? streak.longestStreak ?? 0,
+      current: streakObj.current ?? streakObj.currentStreak ?? raw.currentStreak ?? 0,
+      record: streakObj.record ?? streakObj.longestStreak ?? 0,
       weekActivity: weekActivity.slice(0, 7),
     };
 
     const mappedStats: DashboardStats = {
-      activeGoals: stats.activeGoals ?? 0,
-      completedThisMonth: stats.completedThisMonth ?? stats.completedGoalsThisMonth ?? 0,
-      totalGoalsThisMonth: stats.totalGoalsThisMonth ?? 0,
+      activeGoals: stats.activeGoals ?? raw.inProgressGoals ?? 0,
+      completedThisMonth: stats.completedThisMonth ?? stats.completedGoalsThisMonth ?? raw.completedGoals ?? 0,
+      totalGoalsThisMonth: stats.totalGoalsThisMonth ?? raw.totalGoals ?? 0,
       stepsToday: stats.stepsToday ?? stats.completedStepsToday ?? 0,
       stepsTodayTotal: stats.stepsTodayTotal ?? stats.totalStepsToday ?? 0,
     };
@@ -134,40 +146,44 @@ export class DashboardMapper {
       id: c.id ?? c.categoryId ?? "",
       name: c.name ?? c.categoryName ?? "",
       color: c.color ?? c.categoryColor ?? "#888",
-      goalsCount: c.goalsCount ?? c.goals ?? 0,
+      goalsCount: c.goalsCount ?? c.goals ?? c.goalCount ?? 0,
       avgProgress: Math.round(c.avgProgress ?? c.averageProgress ?? c.progress ?? 0),
     }));
 
     return { streak: mappedStreak, stats: mappedStats, categories: mappedCategories };
   }
 
-  static timelineToDomain(raw: RawTimeline, range: TimelineRange): TimelineData {
-    const points: TimelinePoint[] = (raw.points ?? raw.data ?? []).map((p) => ({
+  static timelineToDomain(raw: RawTimeline | RawTimelinePoint[], range: TimelineRange): TimelineData {
+    const rawPoints = Array.isArray(raw) ? raw : (raw.points ?? raw.data ?? []);
+    const rawMeta: Partial<RawTimeline> = Array.isArray(raw) ? {} : raw;
+
+    const points: TimelinePoint[] = rawPoints.map((p) => ({
       date: p.date ?? "",
-      completedSteps: p.completedSteps ?? p.count ?? p.value ?? 0,
+      completedSteps: p.completedSteps ?? p.completedCount ?? p.count ?? p.value ?? 0,
     }));
 
     return {
       range,
       points,
-      totalCompleted: raw.totalCompleted ?? raw.total ?? 0,
-      growthPercent: raw.growthPercent ?? raw.growth ?? null,
-      activeDays: raw.activeDays ?? points.filter((p) => p.completedSteps > 0).length,
-      totalDays: raw.totalDays ?? points.length,
+      totalCompleted: rawMeta.totalCompleted ?? rawMeta.total ?? points.reduce((s, p) => s + p.completedSteps, 0),
+      growthPercent: rawMeta.growthPercent ?? rawMeta.growth ?? null,
+      activeDays: rawMeta.activeDays ?? points.filter((p) => p.completedSteps > 0).length,
+      totalDays: rawMeta.totalDays ?? points.length,
     };
   }
 
   static upcomingToDomain(raw: RawUpcoming): UpcomingItem {
+    const isStep = (raw.entityType ?? raw.type) === "step";
     return {
-      goalId: raw.goalId ?? "",
-      goalName: raw.goalName ?? raw.name ?? "",
-      stepTitle: raw.stepTitle ?? raw.nextStep ?? null,
+      goalId: raw.goalId ?? raw.entityId ?? "",
+      goalName: raw.goalName ?? raw.name ?? (!isStep ? (raw.title ?? "") : ""),
+      stepTitle: raw.stepTitle ?? raw.nextStep ?? (isStep ? (raw.title ?? null) : null),
       categoryName: raw.categoryName ?? raw.category ?? "",
       categoryColor: raw.categoryColor ?? raw.color ?? "#888",
       dueDate: raw.dueDate ?? raw.endDate ?? null,
       dueLabel: raw.dueLabel ?? null,
       progress: Math.round(raw.progress ?? 0),
-      goalType: (raw.goalType ?? raw.type ?? "CONCLUSIVE") as "CONCLUSIVE" | "CYCLIC",
+      goalType: (raw.goalType ?? (!isStep ? "CONCLUSIVE" : "CONCLUSIVE")) as "CONCLUSIVE" | "CYCLIC",
     };
   }
 
