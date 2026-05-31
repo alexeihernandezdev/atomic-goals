@@ -29,9 +29,12 @@ export const createStepSchema = z
     min: optionalNum(z.number().min(0)),
     // STATUS fields
     statuses: z.array(statusOptionSchema).min(2).optional(),
-    // dates
+    // dates (conclusive goals only)
     startDate: z.string().optional(),
     endDate: z.string().optional(),
+    // day-within-cycle (cyclic goals): "1"-"7" weekly, "1"-"31" monthly,
+    // "YYYY-MM-DD" yearly, "1"-N custom
+    cycleDay: z.string().optional(),
     estimatedDurationMinutes: optionalNum(z.number().int().min(1)),
   })
   .superRefine((data, ctx) => {

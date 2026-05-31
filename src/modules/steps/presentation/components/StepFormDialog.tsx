@@ -9,12 +9,16 @@ import {
   type CreateStepFormValues,
 } from "../schemas/step.schema";
 import type { StepType } from "@/modules/steps/domain/entities/step";
+import type { CyclePeriod } from "@/modules/goals/domain/enums/cycle-period";
 
 interface StepFormDialogProps {
   open: boolean;
   palette: DashPalette;
   accentColor: string;
   loading: boolean;
+  goalType?: "CONCLUSIVE" | "CYCLIC";
+  cyclePeriod?: CyclePeriod;
+  customCycleDays?: number | null;
   onClose: () => void;
   onSubmit: (values: CreateStepFormValues) => Promise<{ ok: boolean; message?: string }>;
 }
@@ -26,11 +30,24 @@ const STEP_TYPES: { value: StepType; label: string; desc: string }[] = [
   { value: "COUNTER", label: "Contador", desc: "Suma o resta unidades" },
 ];
 
+const WEEK_DAYS = [
+  { value: "1", label: "Lunes" },
+  { value: "2", label: "Martes" },
+  { value: "3", label: "Miércoles" },
+  { value: "4", label: "Jueves" },
+  { value: "5", label: "Viernes" },
+  { value: "6", label: "Sábado" },
+  { value: "7", label: "Domingo" },
+];
+
 export function StepFormDialog({
   open,
   palette,
   accentColor,
   loading,
+  goalType,
+  cyclePeriod,
+  customCycleDays,
   onClose,
   onSubmit,
 }: StepFormDialogProps) {
@@ -394,17 +411,77 @@ export function StepFormDialog({
               </div>
             )}
 
-            {/* Dates */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-              <div>
-                <label style={labelStyle}>fecha inicio</label>
-                <input type="date" {...register("startDate")} style={inputStyle} />
+            {/* Dates — conclusive goals only */}
+            {goalType !== "CYCLIC" && (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div>
+                  <label style={labelStyle}>fecha inicio</label>
+                  <input type="date" {...register("startDate")} style={inputStyle} />
+                </div>
+                <div>
+                  <label style={labelStyle}>fecha fin</label>
+                  <input type="date" {...register("endDate")} style={inputStyle} />
+                </div>
               </div>
-              <div>
-                <label style={labelStyle}>fecha fin</label>
-                <input type="date" {...register("endDate")} style={inputStyle} />
+            )}
+
+            {/* Cycle day — cyclic goals only (not DAILY, which has no specific day) */}
+            {goalType === "CYCLIC" && cyclePeriod && cyclePeriod !== "DAILY" && (
+              <div style={fieldStyle}>
+                {cyclePeriod === "WEEKLY" && (
+                  <>
+                    <label style={labelStyle}>día de la semana</label>
+                    <select {...register("cycleDay")} style={inputStyle as React.CSSProperties}>
+                      <option value="">Sin día específico</option>
+                      {WEEK_DAYS.map((d) => (
+                        <option key={d.value} value={d.value}>{d.label}</option>
+                      ))}
+                    </select>
+                  </>
+                )}
+                {cyclePeriod === "MONTHLY" && (
+                  <>
+                    <label style={labelStyle}>día del mes</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={31}
+                      placeholder="ej. 15"
+                      {...register("cycleDay")}
+                      style={inputStyle}
+                    />
+                  </>
+                )}
+                {cyclePeriod === "YEARLY" && (
+                  <>
+                    <label style={labelStyle}>fecha anual (mes y día)</label>
+                    <input
+                      type="date"
+                      {...register("cycleDay")}
+                      style={inputStyle}
+                    />
+                  </>
+                )}
+                {cyclePeriod === "CUSTOM_DAYS" && (
+                  <>
+                    <label style={labelStyle}>
+                      día del ciclo{customCycleDays ? ` (1–${customCycleDays})` : ""}
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={customCycleDays ?? undefined}
+                      placeholder="ej. 1"
+                      {...register("cycleDay")}
+                      style={inputStyle}
+                    />
+                  </>
+                )}
+                {errors.cycleDay && (
+                  <div style={errorStyle}>{String(errors.cycleDay.message)}</div>
+                )}
               </div>
-            </div>
+            )}
 
             {error && (
               <div

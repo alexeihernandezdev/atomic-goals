@@ -471,6 +471,9 @@ export function GoalDetailScreen({
               goalInstanceId={instance.id}
               accentColor={palette.primary}
               palette={palette}
+              goalType={goal.type}
+              cyclePeriod={goal.cyclePeriod ?? undefined}
+              customCycleDays={goal.customCycleDays ?? undefined}
               createAction={createStepAction}
               updateProgressAction={(stepId, payload) =>
                 updateStepProgressAction(stepId, goal.id, payload)

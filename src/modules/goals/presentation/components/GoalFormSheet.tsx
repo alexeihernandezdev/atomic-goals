@@ -431,49 +431,51 @@ export function GoalFormSheet({
             </div>
           )}
 
-          {/* dates */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <div>
-              <label
-                style={{
-                  display: "block",
-                  fontFamily: '"JetBrains Mono", monospace',
-                  fontSize: 10,
-                  letterSpacing: "0.14em",
-                  textTransform: "uppercase",
-                  color: palette.inkDim,
-                  marginBottom: 6,
-                }}
-              >
-                inicio
-              </label>
-              <input
-                {...register("startDate")}
-                type="date"
-                style={INPUT_STYLE(palette)}
-              />
+          {/* dates — only for conclusive goals */}
+          {watchType !== "CYCLIC" && (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    fontFamily: '"JetBrains Mono", monospace',
+                    fontSize: 10,
+                    letterSpacing: "0.14em",
+                    textTransform: "uppercase",
+                    color: palette.inkDim,
+                    marginBottom: 6,
+                  }}
+                >
+                  inicio
+                </label>
+                <input
+                  {...register("startDate")}
+                  type="date"
+                  style={INPUT_STYLE(palette)}
+                />
+              </div>
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    fontFamily: '"JetBrains Mono", monospace',
+                    fontSize: 10,
+                    letterSpacing: "0.14em",
+                    textTransform: "uppercase",
+                    color: palette.inkDim,
+                    marginBottom: 6,
+                  }}
+                >
+                  fin
+                </label>
+                <input
+                  {...register("endDate")}
+                  type="date"
+                  style={INPUT_STYLE(palette)}
+                />
+              </div>
             </div>
-            <div>
-              <label
-                style={{
-                  display: "block",
-                  fontFamily: '"JetBrains Mono", monospace',
-                  fontSize: 10,
-                  letterSpacing: "0.14em",
-                  textTransform: "uppercase",
-                  color: palette.inkDim,
-                  marginBottom: 6,
-                }}
-              >
-                fin
-              </label>
-              <input
-                {...register("endDate")}
-                type="date"
-                style={INPUT_STYLE(palette)}
-              />
-            </div>
-          </div>
+          )}
 
           {/* estimatedDuration */}
           <div>

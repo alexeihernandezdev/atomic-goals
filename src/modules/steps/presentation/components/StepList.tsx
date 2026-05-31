@@ -16,6 +16,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { Step } from "@/modules/steps/domain/entities/step";
+import type { CyclePeriod } from "@/modules/goals/domain/enums/cycle-period";
 import type { DashPalette } from "@/shared/presentation/palette";
 import { useSteps } from "../hooks/use-steps";
 import { ProgressBarStep } from "./subtypes/ProgressBarStep";
@@ -30,6 +31,9 @@ interface StepListProps {
   goalInstanceId: string;
   accentColor: string;
   palette: DashPalette;
+  goalType?: "CONCLUSIVE" | "CYCLIC";
+  cyclePeriod?: CyclePeriod;
+  customCycleDays?: number | null;
   createAction: (
     goalInstanceId: string,
     values: CreateStepFormValues,
@@ -145,6 +149,9 @@ export function StepList({
   goalInstanceId,
   accentColor,
   palette,
+  goalType,
+  cyclePeriod,
+  customCycleDays,
   createAction,
   updateProgressAction,
   reorderAction,
@@ -359,6 +366,9 @@ export function StepList({
         palette={palette}
         accentColor={accentColor}
         loading={creating}
+        goalType={goalType}
+        cyclePeriod={cyclePeriod}
+        customCycleDays={customCycleDays}
         onClose={() => setAddOpen(false)}
         onSubmit={handleCreate}
       />

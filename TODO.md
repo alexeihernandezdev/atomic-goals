@@ -4,3 +4,5 @@
 - [ ] crear skills en base a la arquitectura
 - [x] Barra de navegacion
 - [ ] metas ciclicas deberia tener pasos ciclicos
+- [ ] color de la meta debe ser el mismo de la categoria
+- [ ] un paso se puede editar
