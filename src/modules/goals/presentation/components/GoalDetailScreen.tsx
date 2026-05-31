@@ -91,6 +91,9 @@ export function GoalDetailScreen({
     setGoal(initialGoal);
   }, [initialGoal]);
 
+  const accentColor =
+    categories.find((c) => c.id === goal.categoryId)?.color ?? palette.primary;
+
   const [tab, setTab] = React.useState<"steps" | "history" | "settings">(
     "steps",
   );
@@ -178,7 +181,7 @@ export function GoalDetailScreen({
           position: "relative",
           overflow: "hidden",
           marginBottom: 20,
-          boxShadow: `6px 6px 0 0 ${palette.primary}`,
+          boxShadow: `6px 6px 0 0 ${accentColor}`,
         }}
       >
         {/* top color strip */}
@@ -189,7 +192,7 @@ export function GoalDetailScreen({
             right: 0,
             top: 0,
             height: 8,
-            background: palette.primary,
+            background: accentColor,
             borderBottom: `1.5px solid ${palette.line}`,
           }}
         />
@@ -220,7 +223,7 @@ export function GoalDetailScreen({
                 style={{
                   width: 10,
                   height: 10,
-                  background: palette.primary,
+                  background: accentColor,
                 }}
               />
               <span>{TYPE_LABEL[goal.type] ?? goal.type}</span>
@@ -391,7 +394,7 @@ export function GoalDetailScreen({
                   top: 0,
                   bottom: 0,
                   width: `${progress}%`,
-                  background: isCompleted ? palette.lime : palette.primary,
+                  background: isCompleted ? palette.lime : accentColor,
                   transition: "width .3s",
                 }}
               />
@@ -467,7 +470,7 @@ export function GoalDetailScreen({
               border: "none",
               borderBottom:
                 tab === k
-                  ? `3px solid ${palette.primary}`
+                  ? `3px solid ${accentColor}`
                   : "3px solid transparent",
               marginBottom: -1.5,
               cursor: "pointer",
@@ -491,7 +494,7 @@ export function GoalDetailScreen({
             <StepList
               initialSteps={initialSteps}
               goalInstanceId={instance.id}
-              accentColor={palette.primary}
+              accentColor={accentColor}
               palette={palette}
               goalType={goal.type}
               cyclePeriod={goal.cyclePeriod ?? undefined}

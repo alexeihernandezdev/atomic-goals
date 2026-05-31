@@ -3,6 +3,7 @@
 - [ ] Reciclar componentes
 - [ ] crear skills en base a la arquitectura
 - [x] Barra de navegacion
-- [ ] metas ciclicas deberia tener pasos ciclicos
-- [ ] color de la meta debe ser el mismo de la categoria
-- [ ] un paso se puede editar
+- [x] metas ciclicas deberia tener pasos ciclicos
+- [x] color de la meta debe ser el mismo de la categoria
+- [x] un paso se puede editar
+- [ ] la vista de metas se debe poder filtrar por solo las metas de las categorias
