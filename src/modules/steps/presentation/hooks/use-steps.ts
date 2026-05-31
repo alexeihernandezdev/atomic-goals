@@ -13,6 +13,7 @@ interface StepActions {
     newOrder: number,
   ) => Promise<{ ok: boolean; message?: string }>;
   deleteAction: (stepId: string) => Promise<{ ok: boolean; message?: string }>;
+  onStepsChange?: (steps: Step[]) => void;
 }
 
 export function useSteps(initialSteps: Step[], actions: StepActions) {
@@ -32,12 +33,18 @@ export function useSteps(initialSteps: Step[], actions: StepActions) {
       return next;
     });
 
+  const applySteps = (next: Step[]) => {
+    setSteps(next);
+    actions.onStepsChange?.(next);
+  };
+
   const updateProgress = async (
     stepId: string,
     payload: { current?: number; done?: boolean; currentStatusId?: string },
   ) => {
-    setSteps((prev) =>
-      prev.map((s) => {
+    let nextSteps: Step[] = [];
+    setSteps((prev) => {
+      nextSteps = prev.map((s) => {
         if (s.id !== stepId) return s;
         if (s.type === "PROGRESS_BAR" && payload.current !== undefined)
           return { ...s, current: payload.current };
@@ -48,15 +55,17 @@ export function useSteps(initialSteps: Step[], actions: StepActions) {
         if (s.type === "COUNTER" && payload.current !== undefined)
           return { ...s, current: payload.current };
         return s;
-      }),
-    );
+      });
+      return nextSteps;
+    });
+    actions.onStepsChange?.(nextSteps);
 
     markPending(stepId);
     const result = await actions.updateProgressAction(stepId, payload);
     clearPending(stepId);
 
     if (!result.ok) {
-      setSteps(initialSteps);
+      applySteps(initialSteps);
     }
   };
 
@@ -76,9 +85,10 @@ export function useSteps(initialSteps: Step[], actions: StepActions) {
 
   const deleteStep = async (stepId: string) => {
     const previous = steps;
-    setSteps((prev) => prev.filter((s) => s.id !== stepId));
+    const next = steps.filter((s) => s.id !== stepId);
+    applySteps(next);
     const result = await actions.deleteAction(stepId);
-    if (!result.ok) setSteps(previous);
+    if (!result.ok) applySteps(previous);
   };
 
   return {

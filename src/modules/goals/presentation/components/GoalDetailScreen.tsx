@@ -9,7 +9,7 @@ import type { CategoryOption } from "@/modules/goals/domain/entities/goal";
 import type { GoalFormValues } from "../schemas/goal.schema";
 import { GoalFormSheet } from "./GoalFormSheet";
 import { DASH_PALETTES, type DashPalette } from "@/shared/presentation/palette";
-import { StepList } from "@/modules/steps";
+import { StepList, ProgressCalculator } from "@/modules/steps";
 import type { Step } from "@/modules/steps";
 import type { CreateStepFormValues } from "@/modules/steps/presentation/schemas/step.schema";
 import type { StepEditFormValues } from "@/modules/steps/presentation/components/StepEditDialog";
@@ -98,6 +98,21 @@ export function GoalDetailScreen({
 
   const instance = goal.activeInstance;
   const progress = instance?.progress ?? 0;
+
+  const syncGoalProgressFromSteps = React.useCallback((steps: Step[]) => {
+    const nextProgress = ProgressCalculator.weightedAverage(steps);
+    setGoal((current) => {
+      if (!current.activeInstance) return current;
+      if (current.activeInstance.progress === nextProgress) return current;
+      return {
+        ...current,
+        activeInstance: {
+          ...current.activeInstance,
+          progress: nextProgress,
+        },
+      };
+    });
+  }, []);
   const instanceStatus = instance?.status ?? "IN_PROGRESS";
   const isCompleted = instanceStatus === "COMPLETED";
 
@@ -492,6 +507,7 @@ export function GoalDetailScreen({
                 reorderStepAction(stepId, goal.id, newOrder)
               }
               deleteAction={(stepId) => deleteStepAction(stepId, goal.id)}
+              onStepsChange={syncGoalProgressFromSteps}
             />
           ) : (
             <div

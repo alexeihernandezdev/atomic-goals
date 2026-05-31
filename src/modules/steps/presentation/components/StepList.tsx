@@ -53,6 +53,7 @@ interface StepListProps {
     stepId: string,
     values: StepEditFormValues,
   ) => Promise<{ ok: boolean; step?: Step; message?: string }>;
+  onStepsChange?: (steps: Step[]) => void;
 }
 
 const WEEK_DAYS_ES = [
@@ -196,10 +197,11 @@ export function StepList({
   updateMetadataAction,
   reorderAction,
   deleteAction,
+  onStepsChange,
 }: StepListProps) {
   const { steps, setSteps, updateProgress, reorder, deleteStep } = useSteps(
     initialSteps,
-    { updateProgressAction, reorderAction, deleteAction },
+    { updateProgressAction, reorderAction, deleteAction, onStepsChange },
   );
 
   const [addOpen, setAddOpen] = React.useState(false);
@@ -224,9 +226,13 @@ export function StepList({
     const result = await updateMetadataAction(editingStep.id, values);
     setSaving(false);
     if (result.ok && result.step) {
-      setSteps((prev) =>
-        prev.map((s) => (s.id === result.step!.id ? result.step! : s)),
-      );
+      setSteps((prev) => {
+        const next = prev.map((s) =>
+          s.id === result.step!.id ? result.step! : s,
+        );
+        onStepsChange?.(next);
+        return next;
+      });
       setEditingStep(null);
     }
     return result;
@@ -237,7 +243,11 @@ export function StepList({
     const result = await createAction(goalInstanceId, values, steps.length);
     setCreating(false);
     if (result.ok && result.step) {
-      setSteps((prev) => [...prev, result.step!]);
+      setSteps((prev) => {
+        const next = [...prev, result.step!];
+        onStepsChange?.(next);
+        return next;
+      });
       setAddOpen(false);
     }
     return result;
@@ -367,6 +377,7 @@ export function StepList({
         </div>
       ) : (
         <DndContext
+          id="step-list-dnd"
           sensors={sensors}
           collisionDetection={closestCenter}
           onDragEnd={handleDragEnd}
