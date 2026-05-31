@@ -24,6 +24,7 @@ import { CheckStep } from "./subtypes/CheckStep";
 import { StatusStep } from "./subtypes/StatusStep";
 import { CounterStep } from "./subtypes/CounterStep";
 import { StepFormDialog } from "./StepFormDialog";
+import { StepEditDialog, type StepEditFormValues } from "./StepEditDialog";
 import type { CreateStepFormValues } from "../schemas/step.schema";
 
 interface StepListProps {
@@ -48,6 +49,10 @@ interface StepListProps {
     newOrder: number,
   ) => Promise<{ ok: boolean; message?: string }>;
   deleteAction: (stepId: string) => Promise<{ ok: boolean; message?: string }>;
+  updateMetadataAction: (
+    stepId: string,
+    values: StepEditFormValues,
+  ) => Promise<{ ok: boolean; step?: Step; message?: string }>;
 }
 
 interface SortableStepProps {
@@ -58,6 +63,7 @@ interface SortableStepProps {
     stepId: string,
     payload: { current?: number; done?: boolean; currentStatusId?: string },
   ) => void;
+  onEdit: (step: Step) => void;
   onDelete: (stepId: string) => void;
 }
 
@@ -66,6 +72,7 @@ function SortableStep({
   palette,
   accentColor,
   onProgressChange,
+  onEdit,
   onDelete,
 }: SortableStepProps) {
   const {
@@ -91,7 +98,8 @@ function SortableStep({
     palette,
     accentColor,
     dragHandleProps,
-    onMoreClick: () => onDelete(step.id),
+    onEdit: () => onEdit(step),
+    onDelete: () => onDelete(step.id),
   };
 
   const renderStep = () => {
@@ -154,6 +162,7 @@ export function StepList({
   customCycleDays,
   createAction,
   updateProgressAction,
+  updateMetadataAction,
   reorderAction,
   deleteAction,
 }: StepListProps) {
@@ -164,6 +173,8 @@ export function StepList({
 
   const [addOpen, setAddOpen] = React.useState(false);
   const [creating, setCreating] = React.useState(false);
+  const [editingStep, setEditingStep] = React.useState<Step | null>(null);
+  const [saving, setSaving] = React.useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -174,6 +185,20 @@ export function StepList({
     if (over && active.id !== over.id) {
       reorder(String(active.id), String(over.id));
     }
+  };
+
+  const handleEdit = async (values: StepEditFormValues) => {
+    if (!editingStep) return { ok: false };
+    setSaving(true);
+    const result = await updateMetadataAction(editingStep.id, values);
+    setSaving(false);
+    if (result.ok && result.step) {
+      setSteps((prev) =>
+        prev.map((s) => (s.id === result.step!.id ? result.step! : s)),
+      );
+      setEditingStep(null);
+    }
+    return result;
   };
 
   const handleCreate = async (values: CreateStepFormValues) => {
@@ -329,6 +354,7 @@ export function StepList({
                   onProgressChange={(id, payload) =>
                     updateProgress(id, payload)
                   }
+                  onEdit={setEditingStep}
                   onDelete={deleteStep}
                 />
               ))}
@@ -360,7 +386,7 @@ export function StepList({
         <span style={{ fontSize: 16 }}>+</span> Añadir otro paso
       </button>
 
-      {/* Dialog */}
+      {/* Create dialog */}
       <StepFormDialog
         open={addOpen}
         palette={palette}
@@ -372,6 +398,22 @@ export function StepList({
         onClose={() => setAddOpen(false)}
         onSubmit={handleCreate}
       />
+
+      {/* Edit dialog */}
+      {editingStep && (
+        <StepEditDialog
+          step={editingStep}
+          open={!!editingStep}
+          palette={palette}
+          accentColor={accentColor}
+          loading={saving}
+          goalType={goalType}
+          cyclePeriod={cyclePeriod}
+          customCycleDays={customCycleDays}
+          onClose={() => setEditingStep(null)}
+          onSubmit={handleEdit}
+        />
+      )}
     </div>
   );
 }

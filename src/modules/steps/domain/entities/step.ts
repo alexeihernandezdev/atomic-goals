@@ -80,6 +80,7 @@ export interface UpdateStepMetadataCommand {
   order?: number;
   startDate?: string;
   endDate?: string;
+  cycleDay?: string;
   estimatedDurationMinutes?: number;
 }
 

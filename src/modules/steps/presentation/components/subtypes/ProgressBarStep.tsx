@@ -12,7 +12,8 @@ interface ProgressBarStepProps {
   accentColor: string;
   dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
   onProgressChange: (current: number) => void;
-  onMoreClick?: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
 }
 
 export function ProgressBarStep({
@@ -21,7 +22,8 @@ export function ProgressBarStep({
   accentColor,
   dragHandleProps,
   onProgressChange,
-  onMoreClick,
+  onEdit,
+  onDelete,
 }: ProgressBarStepProps) {
   const [localCurrent, setLocalCurrent] = React.useState(step.current);
 
@@ -54,7 +56,8 @@ export function ProgressBarStep({
       due={due}
       percent={percent}
       dragHandleProps={dragHandleProps}
-      onMoreClick={onMoreClick}
+      onEdit={onEdit}
+      onDelete={onDelete}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <input

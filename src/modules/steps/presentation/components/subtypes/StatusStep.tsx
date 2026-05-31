@@ -12,7 +12,8 @@ interface StatusStepProps {
   accentColor: string;
   dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
   onProgressChange: (statusId: string) => void;
-  onMoreClick?: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
 }
 
 export function StatusStep({
@@ -21,7 +22,8 @@ export function StatusStep({
   accentColor,
   dragHandleProps,
   onProgressChange,
-  onMoreClick,
+  onEdit,
+  onDelete,
 }: StatusStepProps) {
   const [currentId, setCurrentId] = React.useState(step.currentStatusId);
 
@@ -53,7 +55,8 @@ export function StatusStep({
       due={due}
       percent={percent}
       dragHandleProps={dragHandleProps}
-      onMoreClick={onMoreClick}
+      onEdit={onEdit}
+      onDelete={onDelete}
     >
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         {step.statuses

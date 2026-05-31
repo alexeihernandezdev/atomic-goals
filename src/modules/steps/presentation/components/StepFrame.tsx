@@ -12,7 +12,8 @@ interface StepFrameProps {
   due?: string | null;
   percent: number;
   dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
-  onMoreClick?: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
   children: React.ReactNode;
 }
 
@@ -25,9 +26,39 @@ export function StepFrame({
   due,
   percent,
   dragHandleProps,
-  onMoreClick,
+  onEdit,
+  onDelete,
   children,
 }: StepFrameProps) {
+  const [menuOpen, setMenuOpen] = React.useState(false);
+  const menuRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    if (!menuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [menuOpen]);
+
+  const menuItemStyle: React.CSSProperties = {
+    display: "block",
+    width: "100%",
+    padding: "8px 14px",
+    background: "transparent",
+    border: "none",
+    cursor: "pointer",
+    fontFamily: '"Space Grotesk", system-ui, sans-serif',
+    fontSize: 13,
+    fontWeight: 600,
+    textAlign: "left",
+    color: palette.ink,
+    letterSpacing: "-0.005em",
+  };
+
   return (
     <div
       style={{
@@ -130,7 +161,7 @@ export function StepFrame({
       </div>
 
       {/* percent + menu */}
-      <div style={{ textAlign: "right" }}>
+      <div style={{ textAlign: "right", position: "relative" }} ref={menuRef}>
         <div
           style={{
             fontFamily: '"Space Grotesk", system-ui, sans-serif',
@@ -144,9 +175,10 @@ export function StepFrame({
           {percent}
           <span style={{ fontSize: 13, color: palette.inkDim }}>%</span>
         </div>
+
         <button
           aria-label="Más acciones"
-          onClick={onMoreClick}
+          onClick={() => setMenuOpen((v) => !v)}
           style={{
             marginTop: 6,
             background: "transparent",
@@ -161,6 +193,56 @@ export function StepFrame({
         >
           ···
         </button>
+
+        {menuOpen && (
+          <div
+            style={{
+              position: "absolute",
+              right: 0,
+              top: "calc(100% + 2px)",
+              zIndex: 30,
+              background: palette.bg,
+              border: `1.5px solid ${palette.line}`,
+              minWidth: 130,
+              boxShadow: `3px 3px 0 0 ${palette.line}`,
+            }}
+          >
+            {onEdit && (
+              <button
+                style={menuItemStyle}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.background = palette.surface)
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.background = "transparent")
+                }
+                onClick={() => {
+                  setMenuOpen(false);
+                  onEdit();
+                }}
+              >
+                Editar paso
+              </button>
+            )}
+            {onDelete && (
+              <button
+                style={{ ...menuItemStyle, color: "#E11D48" }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.background = "rgba(225,29,72,0.06)")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.background = "transparent")
+                }
+                onClick={() => {
+                  setMenuOpen(false);
+                  onDelete();
+                }}
+              >
+                Eliminar
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

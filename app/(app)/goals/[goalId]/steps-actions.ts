@@ -47,6 +47,7 @@ export async function createStepAction(
         : undefined,
       startDate: values.startDate,
       endDate: values.endDate,
+      cycleDay: values.cycleDay,
       estimatedDurationMinutes: values.estimatedDurationMinutes,
     });
     revalidateTag(`goal:${step.goalInstanceId}`, "max");
@@ -83,6 +84,37 @@ export async function reorderStepAction(
     await container.steps.reorder.execute(stepId, newOrder);
     revalidateTag(`goal:${goalId}`, "max");
     return { ok: true };
+  } catch (e) {
+    if (e instanceof DomainError) return { ok: false, message: e.message };
+    throw e;
+  }
+}
+
+export async function updateStepMetadataAction(
+  stepId: string,
+  goalId: string,
+  values: {
+    title?: string;
+    weight?: number;
+    cycleDay?: string;
+    startDate?: string;
+    endDate?: string;
+    estimatedDurationMinutes?: number;
+  },
+): Promise<{ ok: boolean; step?: Step; message?: string }> {
+  try {
+    const container = await serverContainer();
+    const step = await container.steps.updateMetadata.execute({
+      id: stepId,
+      title: values.title,
+      weight: values.weight,
+      startDate: values.startDate,
+      endDate: values.endDate,
+      cycleDay: values.cycleDay,
+      estimatedDurationMinutes: values.estimatedDurationMinutes,
+    });
+    revalidateTag(`goal:${goalId}`, "max");
+    return { ok: true, step };
   } catch (e) {
     if (e instanceof DomainError) return { ok: false, message: e.message };
     throw e;

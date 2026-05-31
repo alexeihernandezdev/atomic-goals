@@ -32,6 +32,7 @@ export interface RawStep {
   currentStatusId?: string | null;
   startDate?: string | null;
   endDate?: string | null;
+  cycleDay?: string | null;
   estimatedDurationMinutes?: number | null;
   createdAt: string;
   updatedAt: string;
@@ -58,6 +59,7 @@ export class StepMapper {
       order: raw.order,
       startDate: raw.startDate ?? null,
       endDate: raw.endDate ?? null,
+      cycleDay: raw.cycleDay ?? null,
       estimatedDurationMinutes: raw.estimatedDurationMinutes ?? null,
       createdAt: raw.createdAt,
       updatedAt: raw.updatedAt,

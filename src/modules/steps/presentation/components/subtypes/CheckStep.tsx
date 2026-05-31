@@ -11,7 +11,8 @@ interface CheckStepProps {
   accentColor: string;
   dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
   onProgressChange: (done: boolean) => void;
-  onMoreClick?: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
 }
 
 export function CheckStep({
@@ -20,7 +21,8 @@ export function CheckStep({
   accentColor,
   dragHandleProps,
   onProgressChange,
-  onMoreClick,
+  onEdit,
+  onDelete,
 }: CheckStepProps) {
   const [done, setDone] = React.useState(step.done);
 
@@ -51,7 +53,8 @@ export function CheckStep({
       due={due}
       percent={done ? 100 : 0}
       dragHandleProps={dragHandleProps}
-      onMoreClick={onMoreClick}
+      onEdit={onEdit}
+      onDelete={onDelete}
     >
       <button
         onClick={handleToggle}

@@ -12,6 +12,7 @@ import { DASH_PALETTES, type DashPalette } from "@/shared/presentation/palette";
 import { StepList } from "@/modules/steps";
 import type { Step } from "@/modules/steps";
 import type { CreateStepFormValues } from "@/modules/steps/presentation/schemas/step.schema";
+import type { StepEditFormValues } from "@/modules/steps/presentation/components/StepEditDialog";
 import { clientContainer } from "@/shared/composition/client-container";
 
 const TYPE_LABEL: Record<string, string> = {
@@ -41,6 +42,11 @@ interface GoalDetailScreenProps {
     values: CreateStepFormValues,
     order: number,
   ) => Promise<{ ok: boolean; step?: Step; message?: string }>;
+  updateStepMetadataAction: (
+    stepId: string,
+    goalId: string,
+    values: StepEditFormValues,
+  ) => Promise<{ ok: boolean; step?: Step; message?: string }>;
   updateStepProgressAction: (
     stepId: string,
     goalId: string,
@@ -65,6 +71,7 @@ export function GoalDetailScreen({
   updateAction,
   deleteAction,
   createStepAction,
+  updateStepMetadataAction,
   updateStepProgressAction,
   reorderStepAction,
   deleteStepAction,
@@ -475,6 +482,9 @@ export function GoalDetailScreen({
               cyclePeriod={goal.cyclePeriod ?? undefined}
               customCycleDays={goal.customCycleDays ?? undefined}
               createAction={createStepAction}
+              updateMetadataAction={(stepId, values) =>
+                updateStepMetadataAction(stepId, goal.id, values)
+              }
               updateProgressAction={(stepId, payload) =>
                 updateStepProgressAction(stepId, goal.id, payload)
               }
