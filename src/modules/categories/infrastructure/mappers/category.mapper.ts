@@ -38,7 +38,7 @@ export class CategoryMapper {
         ? (raw.icon as CategoryIcon)
         : "heart",
       goalCount: raw.goalCount ?? 0,
-      avgProgress: raw.avgProgress ?? 0,
+      avgProgress: Math.round(raw.avgProgress ?? 0),
       activeGoals: raw.activeGoals ?? 0,
       completedGoals: raw.completedGoals ?? 0,
       deletedAt: raw.deletedAt ?? null,

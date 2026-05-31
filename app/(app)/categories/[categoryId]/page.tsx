@@ -22,9 +22,29 @@ export default async function CategoryDetailPage({
 
   if (!category) notFound();
 
+  const activeInstances = goals
+    .map((g) => g.activeInstance)
+    .filter((i) => i?.status === "IN_PROGRESS");
+  const avgProgress =
+    activeInstances.length > 0
+      ? Math.round(
+          activeInstances.reduce((s, i) => s + (i?.progress ?? 0), 0) /
+            activeInstances.length,
+        )
+      : 0;
+
+  const enrichedCategory = {
+    ...category,
+    goalCount: goals.length,
+    activeGoals: activeInstances.length,
+    completedGoals: goals.filter((g) => g.activeInstance?.status === "COMPLETED")
+      .length,
+    avgProgress,
+  };
+
   return (
     <CategoryDetailScreen
-      category={category}
+      category={enrichedCategory}
       initialGoals={goals}
       updateAction={updateCategoryAction}
       deleteAction={deleteCategoryAction}

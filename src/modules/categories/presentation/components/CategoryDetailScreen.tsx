@@ -414,6 +414,7 @@ export function CategoryDetailScreen({
                 key={goal.id}
                 goal={goal}
                 palette={palette}
+                categoryColor={category.color ?? undefined}
                 compact
                 onClick={() => router.push(`/goals/${goal.id}`)}
               />
