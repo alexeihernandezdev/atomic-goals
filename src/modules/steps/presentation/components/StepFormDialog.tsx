@@ -11,6 +11,7 @@ import {
 import type { StepType } from "@/modules/steps/domain/entities/step";
 import type { CyclePeriod } from "@/modules/goals/domain/enums/cycle-period";
 import { WEEK_DAYS } from "../cycle-day";
+import { useOverlayDismiss } from "@/shared/presentation/hooks/use-overlay-dismiss";
 
 interface StepFormDialogProps {
   open: boolean;
@@ -107,6 +108,8 @@ export function StepFormDialog({
     onClose();
   };
 
+  const { overlayProps } = useOverlayDismiss(handleClose);
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const doSubmit = async (values: any) => {
     setError(null);
@@ -165,7 +168,7 @@ export function StepFormDialog({
         justifyContent: "center",
         background: "rgba(0,0,0,0.45)",
       }}
-      onClick={(e) => e.target === e.currentTarget && handleClose()}
+      {...overlayProps}
     >
       <div
         style={{

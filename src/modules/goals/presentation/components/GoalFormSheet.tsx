@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import type { Goal, CategoryOption } from "@/modules/goals/domain/entities/goal";
 import { goalFormSchema, type GoalFormValues, CYCLE_PERIODS } from "../schemas/goal.schema";
 import type { DashPalette } from "@/shared/presentation/palette";
+import { useBackdropDismiss } from "@/shared/presentation/hooks/use-overlay-dismiss";
 
 interface GoalFormSheetProps {
   palette: DashPalette;
@@ -85,13 +86,15 @@ export function GoalFormSheet({
     }
   };
 
+  const { backdropProps, cancelBackdropDismiss } = useBackdropDismiss(onClose);
+
   if (!open) return null;
 
   return (
     <>
       {/* backdrop */}
       <div
-        onClick={onClose}
+        {...backdropProps}
         style={{
           position: "fixed",
           inset: 0,
@@ -102,6 +105,7 @@ export function GoalFormSheet({
 
       {/* sheet */}
       <div
+        onMouseDown={cancelBackdropDismiss}
         style={{
           position: "fixed",
           top: 0,

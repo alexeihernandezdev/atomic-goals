@@ -2,7 +2,7 @@
 - [x] Metas no salen dentro de categorias
 - [ ] Dashboard no muestra datos reales
 - [x] Barra de progreso no se actualizan correctamente
-- [ ] para los modales si se clickeo dentro del modal y al soltar el click esta fuera no deberia cerrarse
+- [x] para los modales si se clickeo dentro del modal y al soltar el click esta fuera no deberia cerrarse
 - [ ] Al abrir crear paso queda con los datos del paso anterior
 - [ ] Al agregar un paso no se actualiza dedicacion total
 - [ ]

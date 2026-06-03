@@ -1,13 +1,13 @@
 - [ ] Mejorar componente de fechas (Agregar atajos para las fechas y mas)
 - [ ] Crear un meta cíclica y ademas tener fechas de inicio y fin no tiene mucho sentido
 - [ ] poder distribuir la dedicacion estimada en minutos al dia, a semanal, mensual etc. (ver un poco porque va en contra de la filosofia). aunque hay cosas que no se haran todos los dias
-- [ ] Agregar navegador
-- [ ] Detalles de categorias no muestra sus metas
+- [x] Agregar navegador
+- [x] Detalles de categorias no muestra sus metas
 - [ ] Una nota al día
 - [ ] Registrar racha de inicio diarios
 - [ ] Se podria pasar las validaciones zod al dominio y que la capa de presentacion tome de este dominio y en base a eso construya el zod
 - [ ] Reciclar componentes
-- [ ] crear skills en base a la arquitectura
+- [x] crear skills en base a la arquitectura
 - [x] Barra de navegacion
 - [x] metas ciclicas deberia tener pasos ciclicos
 - [x] color de la meta debe ser el mismo de la categoria

@@ -1,7 +1,7 @@
 "use client";
 
-import * as React from "react";
 import type { DashPalette } from "@/shared/presentation/palette";
+import { useOverlayDismiss } from "@/shared/presentation/hooks/use-overlay-dismiss";
 
 export interface ConfirmDialogProps {
   palette: DashPalette;
@@ -16,6 +16,8 @@ export interface ConfirmDialogProps {
 export function ConfirmDialog({
   palette, title, body, confirmLabel, danger = false, onCancel, onConfirm,
 }: ConfirmDialogProps) {
+  const { overlayProps } = useOverlayDismiss(onCancel);
+
   return (
     <div
       role="dialog"
@@ -30,10 +32,9 @@ export function ConfirmDialog({
         alignItems: "center",
         justifyContent: "center",
       }}
-      onClick={onCancel}
+      {...overlayProps}
     >
       <div
-        onClick={(e) => e.stopPropagation()}
         style={{
           width: 380,
           background: palette.surface,

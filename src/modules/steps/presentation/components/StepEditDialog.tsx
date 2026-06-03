@@ -7,6 +7,7 @@ import { z } from "zod";
 import type { Step } from "@/modules/steps/domain/entities/step";
 import type { DashPalette } from "@/shared/presentation/palette";
 import type { CyclePeriod } from "@/modules/goals/domain/enums/cycle-period";
+import { useOverlayDismiss } from "@/shared/presentation/hooks/use-overlay-dismiss";
 
 const nanToUndefined = (v: unknown) =>
   typeof v === "number" && isNaN(v) ? undefined : v;
@@ -103,6 +104,8 @@ export function StepEditDialog({
     onClose();
   };
 
+  const { overlayProps } = useOverlayDismiss(handleClose);
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const doSubmit = async (values: any) => {
     setError(null);
@@ -158,7 +161,7 @@ export function StepEditDialog({
         justifyContent: "center",
         background: "rgba(0,0,0,0.45)",
       }}
-      onClick={(e) => e.target === e.currentTarget && handleClose()}
+      {...overlayProps}
     >
       <div
         style={{
