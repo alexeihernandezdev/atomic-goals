@@ -7,6 +7,7 @@ import { useTheme } from "next-themes";
 import type { Goal, GoalInstance } from "@/modules/goals/domain/entities/goal";
 import type { CategoryOption } from "@/modules/goals/domain/entities/goal";
 import type { GoalFormValues } from "../schemas/goal.schema";
+import type { CyclePeriod } from "@/modules/goals/domain/enums/cycle-period";
 import { GoalFormSheet } from "./GoalFormSheet";
 import { DASH_PALETTES, type DashPalette } from "@/shared/presentation/palette";
 import { StepList, ProgressCalculator } from "@/modules/steps";
@@ -42,6 +43,12 @@ interface GoalDetailScreenProps {
     values: CreateStepFormValues,
     order: number,
   ) => Promise<{ ok: boolean; step?: Step; message?: string }>;
+  createStepsBatchAction: (
+    goalInstanceId: string,
+    values: CreateStepFormValues,
+    baseOrder: number,
+    cyclePeriod?: CyclePeriod,
+  ) => Promise<{ ok: boolean; steps?: Step[]; message?: string }>;
   updateStepMetadataAction: (
     stepId: string,
     goalId: string,
@@ -71,6 +78,7 @@ export function GoalDetailScreen({
   updateAction,
   deleteAction,
   createStepAction,
+  createStepsBatchAction,
   updateStepMetadataAction,
   updateStepProgressAction,
   reorderStepAction,
@@ -500,6 +508,7 @@ export function GoalDetailScreen({
               cyclePeriod={goal.cyclePeriod ?? undefined}
               customCycleDays={goal.customCycleDays ?? undefined}
               createAction={createStepAction}
+              createBatchAction={createStepsBatchAction}
               updateMetadataAction={(stepId, values) =>
                 updateStepMetadataAction(stepId, goal.id, values)
               }

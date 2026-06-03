@@ -10,6 +10,7 @@ import {
 } from "../schemas/step.schema";
 import type { StepType } from "@/modules/steps/domain/entities/step";
 import type { CyclePeriod } from "@/modules/goals/domain/enums/cycle-period";
+import { WEEK_DAYS } from "../cycle-day";
 
 interface StepFormDialogProps {
   open: boolean;
@@ -28,16 +29,6 @@ const STEP_TYPES: { value: StepType; label: string; desc: string }[] = [
   { value: "CHECK", label: "Check", desc: "Hecho o no hecho" },
   { value: "STATUS", label: "Estados", desc: "Múltiples niveles personalizados" },
   { value: "COUNTER", label: "Contador", desc: "Suma o resta unidades" },
-];
-
-const WEEK_DAYS = [
-  { value: "1", label: "Lunes" },
-  { value: "2", label: "Martes" },
-  { value: "3", label: "Miércoles" },
-  { value: "4", label: "Jueves" },
-  { value: "5", label: "Viernes" },
-  { value: "6", label: "Sábado" },
-  { value: "7", label: "Domingo" },
 ];
 
 export function StepFormDialog({
@@ -81,8 +72,37 @@ export function StepFormDialog({
   const type = watch("type");
   const [error, setError] = React.useState<string | null>(null);
 
+  // Multi-day mode: create one step per selected day (weekly/monthly only).
+  const supportsMultiDay =
+    goalType === "CYCLIC" &&
+    (cyclePeriod === "WEEKLY" || cyclePeriod === "MONTHLY");
+  const [multiMode, setMultiMode] = React.useState(false);
+  const [selectedDays, setSelectedDays] = React.useState<string[]>([]);
+  const [monthDayInput, setMonthDayInput] = React.useState("");
+
+  const resetMultiDay = () => {
+    setMultiMode(false);
+    setSelectedDays([]);
+    setMonthDayInput("");
+  };
+
+  const toggleWeekDay = (value: string) => {
+    setSelectedDays((prev) =>
+      prev.includes(value) ? prev.filter((d) => d !== value) : [...prev, value],
+    );
+  };
+
+  const addMonthDay = () => {
+    const n = parseInt(monthDayInput, 10);
+    if (!Number.isInteger(n) || n < 1 || n > 31) return;
+    const value = String(n);
+    setSelectedDays((prev) => (prev.includes(value) ? prev : [...prev, value]));
+    setMonthDayInput("");
+  };
+
   const handleClose = () => {
     reset();
+    resetMultiDay();
     setError(null);
     onClose();
   };
@@ -90,6 +110,13 @@ export function StepFormDialog({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const doSubmit = async (values: any) => {
     setError(null);
+    if (multiMode) {
+      if (selectedDays.length === 0) {
+        setError("Selecciona al menos un día");
+        return;
+      }
+      values = { ...values, cycleDays: selectedDays, cycleDay: undefined };
+    }
     const result = await onSubmit(values);
     if (!result.ok) setError(result.message ?? "Error al crear el paso");
   };
@@ -425,8 +452,158 @@ export function StepFormDialog({
               </div>
             )}
 
-            {/* Cycle day — cyclic goals only (not DAILY, which has no specific day) */}
-            {goalType === "CYCLIC" && cyclePeriod && cyclePeriod !== "DAILY" && (
+            {/* Multi-day toggle — weekly/monthly cyclic goals */}
+            {supportsMultiDay && (
+              <div style={fieldStyle}>
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    cursor: "pointer",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={multiMode}
+                    onChange={(e) => {
+                      setMultiMode(e.target.checked);
+                      if (!e.target.checked) setSelectedDays([]);
+                    }}
+                    style={{ accentColor }}
+                  />
+                  <span
+                    style={{
+                      fontFamily: '"Space Grotesk", system-ui, sans-serif',
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: palette.ink,
+                    }}
+                  >
+                    Repetir en varios días
+                    <span style={{ color: palette.inkDim, fontWeight: 400 }}>
+                      {" "}· crea un paso por día
+                    </span>
+                  </span>
+                </label>
+              </div>
+            )}
+
+            {/* Multi-day selectors */}
+            {supportsMultiDay && multiMode && cyclePeriod === "WEEKLY" && (
+              <div style={fieldStyle}>
+                <label style={labelStyle}>días de la semana</label>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {WEEK_DAYS.map((d) => {
+                    const active = selectedDays.includes(d.value);
+                    return (
+                      <button
+                        type="button"
+                        key={d.value}
+                        onClick={() => toggleWeekDay(d.value)}
+                        style={{
+                          padding: "7px 12px",
+                          border: `1.5px solid ${active ? palette.line : palette.lineSoft}`,
+                          background: active ? palette.line : "transparent",
+                          color: active ? palette.bg : palette.ink,
+                          cursor: "pointer",
+                          fontFamily: '"Space Grotesk", system-ui, sans-serif',
+                          fontSize: 13,
+                          fontWeight: 600,
+                        }}
+                      >
+                        {d.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {supportsMultiDay && multiMode && cyclePeriod === "MONTHLY" && (
+              <div style={fieldStyle}>
+                <label style={labelStyle}>días del mes</label>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input
+                    type="number"
+                    min={1}
+                    max={31}
+                    placeholder="ej. 15"
+                    value={monthDayInput}
+                    onChange={(e) => setMonthDayInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        addMonthDay();
+                      }
+                    }}
+                    style={{ ...inputStyle, flex: 1 }}
+                  />
+                  <button
+                    type="button"
+                    onClick={addMonthDay}
+                    style={{
+                      padding: "0 16px",
+                      border: `1.5px solid ${palette.line}`,
+                      background: palette.line,
+                      color: palette.bg,
+                      cursor: "pointer",
+                      fontFamily: '"Space Grotesk", system-ui, sans-serif',
+                      fontSize: 13,
+                      fontWeight: 700,
+                    }}
+                  >
+                    + Añadir
+                  </button>
+                </div>
+                {selectedDays.length > 0 && (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
+                    {[...selectedDays]
+                      .sort((a, b) => Number(a) - Number(b))
+                      .map((d) => (
+                        <span
+                          key={d}
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 6,
+                            padding: "4px 8px",
+                            border: `1.5px solid ${palette.lineSoft}`,
+                            color: palette.ink,
+                            fontFamily: '"JetBrains Mono", monospace',
+                            fontSize: 11,
+                          }}
+                        >
+                          Día {d}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setSelectedDays((prev) => prev.filter((x) => x !== d))
+                            }
+                            style={{
+                              background: "transparent",
+                              border: "none",
+                              cursor: "pointer",
+                              color: palette.inkDim,
+                              fontSize: 14,
+                              lineHeight: 1,
+                              padding: 0,
+                            }}
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Cycle day (single) — cyclic goals only (not DAILY, not multi-mode) */}
+            {goalType === "CYCLIC" &&
+              cyclePeriod &&
+              cyclePeriod !== "DAILY" &&
+              !(supportsMultiDay && multiMode) && (
               <div style={fieldStyle}>
                 {cyclePeriod === "WEEKLY" && (
                   <>

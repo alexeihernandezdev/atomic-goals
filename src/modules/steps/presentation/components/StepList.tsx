@@ -26,6 +26,11 @@ import { CounterStep } from "./subtypes/CounterStep";
 import { StepFormDialog } from "./StepFormDialog";
 import { StepEditDialog, type StepEditFormValues } from "./StepEditDialog";
 import type { CreateStepFormValues } from "../schemas/step.schema";
+import {
+  formatCycleDayLabel,
+  titleWithDaySuffix,
+  stripDaySuffix,
+} from "../cycle-day";
 
 interface StepListProps {
   initialSteps: Step[];
@@ -40,6 +45,12 @@ interface StepListProps {
     values: CreateStepFormValues,
     order: number,
   ) => Promise<{ ok: boolean; step?: Step; message?: string }>;
+  createBatchAction: (
+    goalInstanceId: string,
+    values: CreateStepFormValues,
+    baseOrder: number,
+    cyclePeriod?: CyclePeriod,
+  ) => Promise<{ ok: boolean; steps?: Step[]; message?: string }>;
   updateProgressAction: (
     stepId: string,
     payload: { current?: number; done?: boolean; currentStatusId?: string },
@@ -54,31 +65,6 @@ interface StepListProps {
     values: StepEditFormValues,
   ) => Promise<{ ok: boolean; step?: Step; message?: string }>;
   onStepsChange?: (steps: Step[]) => void;
-}
-
-const WEEK_DAYS_ES = [
-  "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo",
-];
-
-function formatCycleDayLabel(
-  cycleDay: string | null | undefined,
-  cyclePeriod?: CyclePeriod,
-  customCycleDays?: number | null,
-): string | null {
-  if (!cycleDay || !cyclePeriod) return null;
-  if (cyclePeriod === "WEEKLY") return WEEK_DAYS_ES[Number(cycleDay) - 1] ?? cycleDay;
-  if (cyclePeriod === "MONTHLY") return `Día ${cycleDay}`;
-  if (cyclePeriod === "YEARLY") {
-    try {
-      return new Date(cycleDay).toLocaleDateString("es", { day: "numeric", month: "short" });
-    } catch {
-      return cycleDay;
-    }
-  }
-  if (cyclePeriod === "CUSTOM_DAYS") {
-    return `Día ${cycleDay}${customCycleDays ? `/${customCycleDays}` : ""}`;
-  }
-  return null;
 }
 
 interface SortableStepProps {
@@ -193,16 +179,19 @@ export function StepList({
   cyclePeriod,
   customCycleDays,
   createAction,
+  createBatchAction,
   updateProgressAction,
   updateMetadataAction,
   reorderAction,
   deleteAction,
   onStepsChange,
 }: StepListProps) {
-  const { steps, setSteps, updateProgress, reorder, deleteStep } = useSteps(
-    initialSteps,
-    { updateProgressAction, reorderAction, deleteAction, onStepsChange },
-  );
+  const { steps, setSteps, updateProgress, reorder } = useSteps(initialSteps, {
+    updateProgressAction,
+    reorderAction,
+    deleteAction,
+    onStepsChange,
+  });
 
   const [addOpen, setAddOpen] = React.useState(false);
   const [creating, setCreating] = React.useState(false);
@@ -223,6 +212,42 @@ export function StepList({
   const handleEdit = async (values: StepEditFormValues) => {
     if (!editingStep) return { ok: false };
     setSaving(true);
+
+    const groupId = editingStep.cycleGroupId;
+    // Propagate to all siblings sharing the group, re-suffixing each title with
+    // its own day so "Correr (Lunes)" / "Correr (Miércoles)" stay consistent.
+    if (values.applyToGroup && groupId) {
+      const base = stripDaySuffix(values.title);
+      const siblings = steps.filter((s) => s.cycleGroupId === groupId);
+      const results = await Promise.all(
+        siblings.map((s) => {
+          const title = s.cycleDay
+            ? titleWithDaySuffix(base, s.cycleDay, cyclePeriod)
+            : base;
+          return updateMetadataAction(s.id, {
+            ...values,
+            title,
+            cycleDay: s.cycleDay ?? undefined,
+            applyToGroup: undefined,
+          });
+        }),
+      );
+      setSaving(false);
+      const failed = results.find((r) => !r.ok);
+      if (!failed) {
+        const updated = new Map(
+          results
+            .filter((r) => r.step)
+            .map((r) => [r.step!.id, r.step!] as const),
+        );
+        const next = steps.map((s) => updated.get(s.id) ?? s);
+        setSteps(next);
+        onStepsChange?.(next);
+        setEditingStep(null);
+      }
+      return failed ?? { ok: true };
+    }
+
     const result = await updateMetadataAction(editingStep.id, values);
     setSaving(false);
     if (result.ok && result.step) {
@@ -236,9 +261,61 @@ export function StepList({
     return result;
   };
 
+  const handleDelete = async (stepId: string) => {
+    const target = steps.find((s) => s.id === stepId);
+    if (!target) return;
+    const groupId = target.cycleGroupId;
+    const siblings = groupId
+      ? steps.filter((s) => s.cycleGroupId === groupId)
+      : [target];
+
+    if (groupId && siblings.length > 1) {
+      const ok = window.confirm(
+        `Esto eliminará los ${siblings.length} pasos del grupo. ¿Continuar?`,
+      );
+      if (!ok) return;
+    }
+
+    const previous = steps;
+    const removeIds = new Set(siblings.map((s) => s.id));
+    const next = steps.filter((s) => !removeIds.has(s.id));
+    setSteps(next);
+    onStepsChange?.(next);
+
+    // Backend cascades the deletion to the whole group by cycleGroupId.
+    const result = await deleteAction(stepId);
+    if (!result.ok) {
+      setSteps(previous);
+      onStepsChange?.(previous);
+    }
+  };
+
   const handleCreate = async (values: CreateStepFormValues) => {
     setCreating(true);
-    const result = await createAction(goalInstanceId, values, steps.length);
+    const days = values.cycleDays ?? [];
+
+    // Multiple days → fan-out into a linked group via the batch endpoint.
+    if (days.length >= 2) {
+      const result = await createBatchAction(
+        goalInstanceId,
+        values,
+        steps.length,
+        cyclePeriod,
+      );
+      setCreating(false);
+      if (result.ok && result.steps) {
+        const next = [...steps, ...result.steps];
+        setSteps(next);
+        onStepsChange?.(next);
+        setAddOpen(false);
+      }
+      return { ok: result.ok, message: result.message };
+    }
+
+    // 0 or 1 day → a single step (fold the lone selected day into cycleDay).
+    const single =
+      days.length === 1 ? { ...values, cycleDay: days[0] } : values;
+    const result = await createAction(goalInstanceId, single, steps.length);
     setCreating(false);
     if (result.ok && result.step) {
       const next = [...steps, result.step!];
@@ -395,7 +472,7 @@ export function StepList({
                     updateProgress(id, payload)
                   }
                   onEdit={setEditingStep}
-                  onDelete={deleteStep}
+                  onDelete={handleDelete}
                 />
               ))}
             </div>

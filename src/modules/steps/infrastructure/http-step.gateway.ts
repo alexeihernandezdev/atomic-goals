@@ -2,6 +2,7 @@ import type { StepGateway } from "../application/gateways/step.gateway";
 import type {
   Step,
   CreateStepCommand,
+  CreateStepsBatchCommand,
   UpdateStepMetadataCommand,
   UpdateStepProgressCommand,
 } from "../domain/entities/step";
@@ -55,6 +56,14 @@ export class HttpStepGateway implements StepGateway {
     });
     if (error) throw mapHttpError(error);
     return StepMapper.toDomain(unwrap<RawStep>(data));
+  }
+
+  async createBatch(command: CreateStepsBatchCommand): Promise<Step[]> {
+    const { data, error } = await this.client.POST("/steps/batch", {
+      body: command,
+    });
+    if (error) throw mapHttpError(error);
+    return unwrap<RawStep[]>(data).map(StepMapper.toDomain);
   }
 
   async updateMetadata(command: UpdateStepMetadataCommand): Promise<Step> {

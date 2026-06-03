@@ -28,6 +28,7 @@ import { GetActivityUseCase } from "@/modules/dashboard/application/use-cases/ge
 import { HttpStepGateway } from "@/modules/steps/infrastructure/http-step.gateway";
 import { ListStepsUseCase } from "@/modules/steps/application/use-cases/list-steps.use-case";
 import { CreateStepUseCase } from "@/modules/steps/application/use-cases/create-step.use-case";
+import { CreateStepsBatchUseCase } from "@/modules/steps/application/use-cases/create-steps-batch.use-case";
 import { UpdateStepMetadataUseCase } from "@/modules/steps/application/use-cases/update-metadata.use-case";
 import { UpdateStepProgressUseCase } from "@/modules/steps/application/use-cases/update-progress.use-case";
 import { DeleteStepUseCase } from "@/modules/steps/application/use-cases/delete-step.use-case";
@@ -104,6 +105,7 @@ export interface SettingsUseCases {
 export interface StepUseCases {
   list: ListStepsUseCase;
   create: CreateStepUseCase;
+  createBatch: CreateStepsBatchUseCase;
   updateMetadata: UpdateStepMetadataUseCase;
   updateProgress: UpdateStepProgressUseCase;
   delete: DeleteStepUseCase;
@@ -168,6 +170,7 @@ export async function serverContainer(): Promise<ServerContainer> {
     steps: {
       list: new ListStepsUseCase(stepGateway),
       create: new CreateStepUseCase(stepGateway),
+      createBatch: new CreateStepsBatchUseCase(stepGateway),
       updateMetadata: new UpdateStepMetadataUseCase(stepGateway),
       updateProgress: new UpdateStepProgressUseCase(stepGateway),
       delete: new DeleteStepUseCase(stepGateway),

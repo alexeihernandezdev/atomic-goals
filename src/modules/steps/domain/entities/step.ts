@@ -17,6 +17,7 @@ interface StepBase {
   startDate?: string | null;
   endDate?: string | null;
   cycleDay?: string | null;
+  cycleGroupId?: string | null;
   estimatedDurationMinutes?: number | null;
   createdAt: string;
   updatedAt: string;
@@ -70,6 +71,17 @@ export interface CreateStepCommand {
   endDate?: string;
   cycleDay?: string;
   estimatedDurationMinutes?: number;
+}
+
+export type CreateStepBatchItem = Omit<
+  CreateStepCommand,
+  "goalInstanceId" | "order"
+>;
+
+export interface CreateStepsBatchCommand {
+  goalInstanceId: string;
+  baseOrder: number;
+  steps: CreateStepBatchItem[];
 }
 
 export interface UpdateStepMetadataCommand {

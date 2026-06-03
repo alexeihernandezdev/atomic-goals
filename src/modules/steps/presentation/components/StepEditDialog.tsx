@@ -21,6 +21,8 @@ const editSchema = z.object({
     nanToUndefined,
     z.number().int().min(1).optional(),
   ),
+  // propagate this edit to every step in the recurring group
+  applyToGroup: z.boolean().optional(),
 });
 
 export type StepEditFormValues = z.infer<typeof editSchema>;
@@ -75,6 +77,7 @@ export function StepEditDialog({
       startDate: step.startDate ? step.startDate.substring(0, 10) : undefined,
       endDate: step.endDate ? step.endDate.substring(0, 10) : undefined,
       estimatedDurationMinutes: step.estimatedDurationMinutes ?? undefined,
+      applyToGroup: false,
     },
   });
 
@@ -89,6 +92,7 @@ export function StepEditDialog({
         startDate: step.startDate ? step.startDate.substring(0, 10) : undefined,
         endDate: step.endDate ? step.endDate.substring(0, 10) : undefined,
         estimatedDurationMinutes: step.estimatedDurationMinutes ?? undefined,
+        applyToGroup: false,
       });
       setError(null);
     }
@@ -307,6 +311,34 @@ export function StepEditDialog({
                   <input type="date" {...register("endDate")} style={inputStyle} />
                 </div>
               </div>
+            )}
+
+            {step.cycleGroupId && (
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  marginTop: 4,
+                  cursor: "pointer",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  {...register("applyToGroup")}
+                  style={{ accentColor }}
+                />
+                <span
+                  style={{
+                    fontFamily: '"Space Grotesk", system-ui, sans-serif',
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: palette.ink,
+                  }}
+                >
+                  Aplicar a todos los días del grupo
+                </span>
+              </label>
             )}
 
             {error && (

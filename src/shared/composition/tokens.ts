@@ -30,6 +30,7 @@ export const TOKENS = {
   },
   steps: {
     create: Symbol("steps:create"),
+    createBatch: Symbol("steps:createBatch"),
     updateMetadata: Symbol("steps:updateMetadata"),
     updateProgress: Symbol("steps:updateProgress"),
     delete: Symbol("steps:delete"),

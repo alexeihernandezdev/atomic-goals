@@ -14,8 +14,12 @@
 - [x] un paso se puede editar
 - [ ] la vista de metas se debe poder filtrar por solo las metas de las categorias
 - [ ] Poder crear meta desde categoria
-- [ ] Una meta ciclica cuando termina el periodo se crea una nueva con los mismos pasos, pero deberia haber un registro para poder ver su pogreso general -[ ]
+- [ ] Una meta ciclica cuando termina el periodo se crea una nueva con los mismos pasos, pero deberia haber un registro para poder ver su pogreso general
+- [ ]
 - [ ] Poder aumentar el contador de forma mas rapida
 - [x] El inicio y fin en una meta no tiene mucho sentido, debe estar determinado por el inicio del primer paso y del ultimo paso
 - [ ] Agregar descripcion opcional en paso
 - [ ] Cuando es mensual poder dividir por dia de la semana
+- [ ] en paso agregar campo de todos los dias
+- [ ] barra de progreso debe ser un input de barra
+- [ ] Alguna forma de para todos los habitos que son diarios crearlos mas facil

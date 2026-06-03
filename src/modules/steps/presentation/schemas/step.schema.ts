@@ -35,6 +35,8 @@ export const createStepSchema = z
     // day-within-cycle (cyclic goals): "1"-"7" weekly, "1"-"31" monthly,
     // "YYYY-MM-DD" yearly, "1"-N custom
     cycleDay: z.string().optional(),
+    // multiple days → fan-out into one step per day (weekly/monthly groups)
+    cycleDays: z.array(z.string()).optional(),
     estimatedDurationMinutes: optionalNum(z.number().int().min(1)),
   })
   .superRefine((data, ctx) => {

@@ -33,6 +33,7 @@ export interface RawStep {
   startDate?: string | null;
   endDate?: string | null;
   cycleDay?: string | null;
+  cycleGroupId?: string | null;
   estimatedDurationMinutes?: number | null;
   createdAt: string;
   updatedAt: string;
@@ -60,6 +61,7 @@ export class StepMapper {
       startDate: raw.startDate ?? null,
       endDate: raw.endDate ?? null,
       cycleDay: raw.cycleDay ?? null,
+      cycleGroupId: raw.cycleGroupId ?? null,
       estimatedDurationMinutes: raw.estimatedDurationMinutes ?? null,
       createdAt: raw.createdAt,
       updatedAt: raw.updatedAt,

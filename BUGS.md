@@ -5,3 +5,4 @@
 - [ ] para los modales si se clickeo dentro del modal y al soltar el click esta fuera no deberia cerrarse
 - [ ] Al abrir crear paso queda con los datos del paso anterior
 - [ ] Al agregar un paso no se actualiza dedicacion total
+- [ ]

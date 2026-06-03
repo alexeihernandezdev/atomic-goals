@@ -4,6 +4,7 @@ import { GoalDetailScreen } from "@/modules/goals";
 import { updateGoalAction, deleteGoalAction } from "../actions";
 import {
   createStepAction,
+  createStepsBatchAction,
   updateStepMetadataAction,
   updateStepProgressAction,
   reorderStepAction,
@@ -43,6 +44,7 @@ export default async function GoalDetailPage({
       updateAction={updateGoalAction}
       deleteAction={deleteGoalAction}
       createStepAction={createStepAction}
+      createStepsBatchAction={createStepsBatchAction}
       updateStepMetadataAction={updateStepMetadataAction}
       updateStepProgressAction={updateStepProgressAction}
       reorderStepAction={reorderStepAction}
