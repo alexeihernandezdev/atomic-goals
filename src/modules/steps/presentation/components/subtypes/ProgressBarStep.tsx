@@ -37,10 +37,9 @@ export function ProgressBarStep({
 
   const percent = ProgressCalculator.forStep({ ...step, current: localCurrent });
 
-  const handleBlur = () => {
-    if (localCurrent !== step.current) {
-      onProgressChange(localCurrent);
-    }
+  const handleChange = (value: number) => {
+    setLocalCurrent(value);
+    onProgressChange(value);
   };
 
   const due = step.endDate
@@ -65,62 +64,37 @@ export function ProgressBarStep({
       onEdit={onEdit}
       onDelete={onDelete}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <input
-          type="number"
+          type="range"
           value={localCurrent}
           min={0}
           max={step.target}
-          onChange={(e) =>
-            setLocalCurrent(
-              Math.min(step.target, Math.max(0, Number(e.target.value) || 0)),
-            )
-          }
-          onBlur={handleBlur}
+          step={1}
+          onChange={(e) => handleChange(Number(e.target.value))}
           style={{
-            width: 70,
-            height: 32,
-            padding: "0 10px",
-            border: `1.5px solid ${palette.line}`,
-            background: palette.surface,
-            color: palette.ink,
-            fontFamily: '"Space Grotesk", system-ui, sans-serif',
-            fontSize: 14,
-            fontWeight: 700,
-            letterSpacing: "-0.005em",
-            outline: "none",
+            width: "100%",
+            accentColor,
+            cursor: "pointer",
+            height: 6,
           }}
         />
         <div
           style={{
+            display: "flex",
+            justifyContent: "space-between",
             fontFamily: '"JetBrains Mono", monospace',
-            fontSize: 12,
+            fontSize: 11,
             color: palette.inkDim,
             letterSpacing: "0.04em",
           }}
         >
-          / {step.target} {step.unit ?? ""}
-        </div>
-        <div
-          style={{
-            flex: 1,
-            height: 10,
-            background: palette.lineSofter,
-            position: "relative",
-            border: `1.5px solid ${palette.line}`,
-          }}
-        >
-          <div
-            style={{
-              position: "absolute",
-              left: 0,
-              top: 0,
-              bottom: 0,
-              width: `${percent}%`,
-              background: accentColor,
-              transition: "width .25s",
-            }}
-          />
+          <span style={{ color: palette.ink, fontWeight: 700 }}>
+            {localCurrent}{step.unit ? ` ${step.unit}` : ""}
+          </span>
+          <span>
+            {step.target}{step.unit ? ` ${step.unit}` : ""}
+          </span>
         </div>
       </div>
     </StepFrame>
