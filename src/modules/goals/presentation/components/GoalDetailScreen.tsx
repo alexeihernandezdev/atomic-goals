@@ -335,7 +335,7 @@ export function GoalDetailScreen({
                       marginTop: 2,
                     }}
                   >
-                    {goal.estimatedDurationMinutes} min / día
+                    {goal.estimatedDurationMinutes} min (total)
                   </div>
                 </div>
               )}

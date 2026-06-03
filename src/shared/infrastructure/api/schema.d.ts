@@ -550,15 +550,6 @@ export interface components {
              * @example 14
              */
             customCycleDays?: number;
-            /** @example 2025-01-01T00:00:00.000Z */
-            startDate?: string;
-            /** @example 2025-12-31T00:00:00.000Z */
-            endDate?: string;
-            /**
-             * @description Estimated duration in minutes
-             * @example 30
-             */
-            estimatedDurationMinutes?: number;
         };
         UpdateGoalDto: {
             /** @example Run 5k every day */
@@ -574,12 +565,6 @@ export interface components {
             cyclePeriod?: "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY" | "CUSTOM_DAYS";
             /** @example 14 */
             customCycleDays?: number;
-            /** @example 2025-01-01T00:00:00.000Z */
-            startDate?: string;
-            /** @example 2025-12-31T00:00:00.000Z */
-            endDate?: string;
-            /** @example 30 */
-            estimatedDurationMinutes?: number;
         };
         UpdateGoalInstanceStatusDto: {
             /**

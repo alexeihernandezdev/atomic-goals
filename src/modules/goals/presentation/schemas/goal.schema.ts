@@ -18,9 +18,6 @@ export const goalFormSchema = z
       .enum(["DAILY", "WEEKLY", "MONTHLY", "YEARLY", "CUSTOM_DAYS"])
       .optional(),
     customCycleDays: z.number().int().min(1).optional(),
-    startDate: z.string().optional(),
-    endDate: z.string().optional(),
-    estimatedDurationMinutes: z.number().int().min(1).optional(),
   })
   .superRefine((data, ctx) => {
     if (data.type === "CYCLIC" && !data.cyclePeriod) {

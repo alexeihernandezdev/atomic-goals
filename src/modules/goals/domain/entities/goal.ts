@@ -39,9 +39,6 @@ export interface CreateGoalCommand {
   type: GoalType;
   cyclePeriod?: CyclePeriod;
   customCycleDays?: number;
-  startDate?: string;
-  endDate?: string;
-  estimatedDurationMinutes?: number;
 }
 
 export interface UpdateGoalCommand {
@@ -51,9 +48,6 @@ export interface UpdateGoalCommand {
   categoryId?: string;
   cyclePeriod?: CyclePeriod;
   customCycleDays?: number;
-  startDate?: string;
-  endDate?: string;
-  estimatedDurationMinutes?: number;
 }
 
 export interface CategoryOption {

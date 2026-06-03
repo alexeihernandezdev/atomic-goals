@@ -58,11 +58,6 @@ export function GoalFormSheet({
       categoryId: goal?.categoryId ?? "",
       type: goal?.type ?? "CONCLUSIVE",
       cyclePeriod: goal?.cyclePeriod ?? undefined,
-      startDate: goal?.startDate
-        ? goal.startDate.substring(0, 10)
-        : "",
-      endDate: goal?.endDate ? goal.endDate.substring(0, 10) : "",
-      estimatedDurationMinutes: goal?.estimatedDurationMinutes ?? undefined,
     },
   });
 
@@ -77,9 +72,6 @@ export function GoalFormSheet({
         categoryId: goal?.categoryId ?? "",
         type: goal?.type ?? "CONCLUSIVE",
         cyclePeriod: goal?.cyclePeriod ?? undefined,
-        startDate: goal?.startDate ? goal.startDate.substring(0, 10) : "",
-        endDate: goal?.endDate ? goal.endDate.substring(0, 10) : "",
-        estimatedDurationMinutes: goal?.estimatedDurationMinutes ?? undefined,
       });
     }
   }, [open, goal, reset]);
@@ -430,76 +422,6 @@ export function GoalFormSheet({
               )}
             </div>
           )}
-
-          {/* dates — only for conclusive goals */}
-          {watchType !== "CYCLIC" && (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-              <div>
-                <label
-                  style={{
-                    display: "block",
-                    fontFamily: '"JetBrains Mono", monospace',
-                    fontSize: 10,
-                    letterSpacing: "0.14em",
-                    textTransform: "uppercase",
-                    color: palette.inkDim,
-                    marginBottom: 6,
-                  }}
-                >
-                  inicio
-                </label>
-                <input
-                  {...register("startDate")}
-                  type="date"
-                  style={INPUT_STYLE(palette)}
-                />
-              </div>
-              <div>
-                <label
-                  style={{
-                    display: "block",
-                    fontFamily: '"JetBrains Mono", monospace',
-                    fontSize: 10,
-                    letterSpacing: "0.14em",
-                    textTransform: "uppercase",
-                    color: palette.inkDim,
-                    marginBottom: 6,
-                  }}
-                >
-                  fin
-                </label>
-                <input
-                  {...register("endDate")}
-                  type="date"
-                  style={INPUT_STYLE(palette)}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* estimatedDuration */}
-          <div>
-            <label
-              style={{
-                display: "block",
-                fontFamily: '"JetBrains Mono", monospace',
-                fontSize: 10,
-                letterSpacing: "0.14em",
-                textTransform: "uppercase",
-                color: palette.inkDim,
-                marginBottom: 6,
-              }}
-            >
-              dedicación estimada (minutos/día)
-            </label>
-            <input
-              {...register("estimatedDurationMinutes", { valueAsNumber: true })}
-              type="number"
-              min={1}
-              placeholder="ej: 30"
-              style={INPUT_STYLE(palette)}
-            />
-          </div>
 
           {/* submit */}
           <button
