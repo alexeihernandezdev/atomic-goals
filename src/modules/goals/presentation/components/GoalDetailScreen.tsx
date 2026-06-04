@@ -21,6 +21,21 @@ const TYPE_LABEL: Record<string, string> = {
   CYCLIC: "Cíclica",
 };
 
+const CYCLE_PERIOD_LABEL: Record<string, string> = {
+  DAILY: "Diario",
+  WEEKLY: "Semanal",
+  MONTHLY: "Mensual",
+  YEARLY: "Anual",
+  CUSTOM_DAYS: "Personalizado",
+};
+
+function formatDuration(minutes: number): string {
+  if (minutes < 60) return `${minutes} min`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m === 0 ? `${h} h` : `${h} h ${m} min`;
+}
+
 const STATUS_LABEL: Record<string, string> = {
   IN_PROGRESS: "En curso",
   COMPLETED: "Completada",
@@ -329,6 +344,27 @@ export function GoalDetailScreen({
                     : "—"}
                 </div>
               </div>
+              {goal.type === "CYCLIC" && goal.cyclePeriod && (
+                <div>
+                  <div style={{ textTransform: "uppercase", opacity: 0.6 }}>
+                    ciclo
+                  </div>
+                  <div
+                    style={{
+                      fontFamily: '"Space Grotesk", system-ui, sans-serif',
+                      fontSize: 14,
+                      fontWeight: 700,
+                      color: palette.ink,
+                      marginTop: 2,
+                    }}
+                  >
+                    {CYCLE_PERIOD_LABEL[goal.cyclePeriod] ?? goal.cyclePeriod}
+                    {goal.cyclePeriod === "CUSTOM_DAYS" && goal.customCycleDays
+                      ? ` (${goal.customCycleDays}d)`
+                      : ""}
+                  </div>
+                </div>
+              )}
               {goal.estimatedDurationMinutes && (
                 <div>
                   <div style={{ textTransform: "uppercase", opacity: 0.6 }}>
@@ -343,7 +379,7 @@ export function GoalDetailScreen({
                       marginTop: 2,
                     }}
                   >
-                    {goal.estimatedDurationMinutes} min (total)
+                    {formatDuration(goal.estimatedDurationMinutes)}
                   </div>
                 </div>
               )}
