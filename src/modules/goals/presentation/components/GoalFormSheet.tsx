@@ -59,6 +59,7 @@ export function GoalFormSheet({
       categoryId: goal?.categoryId ?? "",
       type: goal?.type ?? "CONCLUSIVE",
       cyclePeriod: goal?.cyclePeriod ?? undefined,
+      cloneStepsOnRenewal: goal?.cloneStepsOnRenewal ?? true,
     },
   });
 
@@ -73,6 +74,7 @@ export function GoalFormSheet({
         categoryId: goal?.categoryId ?? "",
         type: goal?.type ?? "CONCLUSIVE",
         cyclePeriod: goal?.cyclePeriod ?? undefined,
+        cloneStepsOnRenewal: goal?.cloneStepsOnRenewal ?? true,
       });
     }
   }, [open, goal, reset]);
@@ -425,6 +427,51 @@ export function GoalFormSheet({
                 </p>
               )}
             </div>
+          )}
+
+          {/* cloneStepsOnRenewal — only for CYCLIC */}
+          {watchType === "CYCLIC" && (
+            <label
+              style={{
+                display: "flex",
+                alignItems: "flex-start",
+                gap: 10,
+                cursor: "pointer",
+                padding: "12px 14px",
+                border: `1.5px solid ${palette.lineSoft}`,
+              }}
+            >
+              <input
+                {...register("cloneStepsOnRenewal")}
+                type="checkbox"
+                style={{ marginTop: 2 }}
+              />
+              <span>
+                <span
+                  style={{
+                    display: "block",
+                    fontFamily: '"Space Grotesk", system-ui, sans-serif',
+                    fontSize: 13,
+                    fontWeight: 700,
+                    color: palette.ink,
+                  }}
+                >
+                  Regenerar pasos cada período
+                </span>
+                <span
+                  style={{
+                    display: "block",
+                    marginTop: 2,
+                    fontFamily: '"JetBrains Mono", monospace',
+                    fontSize: 11,
+                    color: palette.inkDim,
+                  }}
+                >
+                  Al iniciar un período nuevo se recrean los mismos pasos con sus
+                  fechas adaptadas. Si lo desactivas, cada período empieza vacío.
+                </span>
+              </span>
+            </label>
           )}
 
           {/* submit */}

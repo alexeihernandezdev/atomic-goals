@@ -27,10 +27,30 @@ import { StepFormDialog } from "./StepFormDialog";
 import { StepEditDialog, type StepEditFormValues } from "./StepEditDialog";
 import type { CreateStepFormValues } from "../schemas/step.schema";
 import {
-  formatCycleDayLabel,
-  titleWithDaySuffix,
+  formatScheduledDateLabel,
+  titleWithDateSuffix,
   stripDaySuffix,
+  resolveCycleDayToDate,
 } from "../cycle-day";
+
+// Resolution context forwarded to the create actions so a recurrence pattern
+// can be turned into a concrete scheduledDate against the active cycle.
+interface StepCycleContext {
+  cycleStart?: string | null;
+  cyclePeriod?: CyclePeriod;
+  customCycleDays?: number | null;
+}
+
+// Metadata payload sent to the update action, with the recurrence pattern
+// already resolved to a concrete scheduledDate.
+export interface StepMetadataUpdate {
+  title?: string;
+  weight?: number;
+  scheduledDate?: string;
+  startDate?: string;
+  endDate?: string;
+  estimatedDurationMinutes?: number;
+}
 
 interface StepListProps {
   initialSteps: Step[];
@@ -40,16 +60,18 @@ interface StepListProps {
   goalType?: "CONCLUSIVE" | "CYCLIC";
   cyclePeriod?: CyclePeriod;
   customCycleDays?: number | null;
+  cycleStart?: string | null;
   createAction: (
     goalInstanceId: string,
     values: CreateStepFormValues,
     order: number,
+    ctx?: StepCycleContext,
   ) => Promise<{ ok: boolean; step?: Step; message?: string }>;
   createBatchAction: (
     goalInstanceId: string,
     values: CreateStepFormValues,
     baseOrder: number,
-    cyclePeriod?: CyclePeriod,
+    ctx?: StepCycleContext,
   ) => Promise<{ ok: boolean; steps?: Step[]; message?: string }>;
   updateProgressAction: (
     stepId: string,
@@ -62,7 +84,7 @@ interface StepListProps {
   deleteAction: (stepId: string) => Promise<{ ok: boolean; message?: string }>;
   updateMetadataAction: (
     stepId: string,
-    values: StepEditFormValues,
+    values: StepMetadataUpdate,
   ) => Promise<{ ok: boolean; step?: Step; message?: string }>;
   onStepsChange?: (steps: Step[]) => void;
 }
@@ -178,6 +200,7 @@ export function StepList({
   goalType,
   cyclePeriod,
   customCycleDays,
+  cycleStart,
   createAction,
   createBatchAction,
   updateProgressAction,
@@ -221,14 +244,17 @@ export function StepList({
       const siblings = steps.filter((s) => s.cycleGroupId === groupId);
       const results = await Promise.all(
         siblings.map((s) => {
-          const title = s.cycleDay
-            ? titleWithDaySuffix(base, s.cycleDay, cyclePeriod)
+          const title = s.scheduledDate
+            ? titleWithDateSuffix(base, s.scheduledDate, cyclePeriod)
             : base;
           return updateMetadataAction(s.id, {
-            ...values,
             title,
-            cycleDay: s.cycleDay ?? undefined,
-            applyToGroup: undefined,
+            weight: values.weight,
+            estimatedDurationMinutes: values.estimatedDurationMinutes,
+            startDate: values.startDate,
+            endDate: values.endDate,
+            // keep each sibling's own date — don't overwrite with the edited one
+            scheduledDate: s.scheduledDate ?? undefined,
           });
         }),
       );
@@ -248,7 +274,19 @@ export function StepList({
       return failed ?? { ok: true };
     }
 
-    const result = await updateMetadataAction(editingStep.id, values);
+    const scheduledDate = resolveCycleDayToDate(
+      values.cycleDay,
+      cyclePeriod,
+      cycleStart,
+    );
+    const result = await updateMetadataAction(editingStep.id, {
+      title: values.title,
+      weight: values.weight,
+      estimatedDurationMinutes: values.estimatedDurationMinutes,
+      startDate: values.startDate,
+      endDate: values.endDate,
+      scheduledDate,
+    });
     setSaving(false);
     if (result.ok && result.step) {
       const next = steps.map((s) =>
@@ -290,6 +328,12 @@ export function StepList({
     }
   };
 
+  const cycleCtx: StepCycleContext = {
+    cycleStart,
+    cyclePeriod,
+    customCycleDays,
+  };
+
   const handleCreate = async (values: CreateStepFormValues) => {
     setCreating(true);
     const days = values.cycleDays ?? [];
@@ -300,7 +344,7 @@ export function StepList({
         goalInstanceId,
         values,
         steps.length,
-        cyclePeriod,
+        cycleCtx,
       );
       setCreating(false);
       if (result.ok && result.steps) {
@@ -315,7 +359,12 @@ export function StepList({
     // 0 or 1 day → a single step (fold the lone selected day into cycleDay).
     const single =
       days.length === 1 ? { ...values, cycleDay: days[0] } : values;
-    const result = await createAction(goalInstanceId, single, steps.length);
+    const result = await createAction(
+      goalInstanceId,
+      single,
+      steps.length,
+      cycleCtx,
+    );
     setCreating(false);
     if (result.ok && result.step) {
       const next = [...steps, result.step!];
@@ -466,7 +515,7 @@ export function StepList({
                   step={step}
                   palette={palette}
                   accentColor={accentColor}
-                  cycleInfo={formatCycleDayLabel(step.cycleDay, cyclePeriod, customCycleDays)}
+                  cycleInfo={formatScheduledDateLabel(step.scheduledDate, cyclePeriod)}
                   estimatedMinutes={step.estimatedDurationMinutes ?? null}
                   onProgressChange={(id, payload) =>
                     updateProgress(id, payload)
@@ -527,6 +576,7 @@ export function StepList({
           goalType={goalType}
           cyclePeriod={cyclePeriod}
           customCycleDays={customCycleDays}
+          cycleStart={cycleStart}
           onClose={() => setEditingStep(null)}
           onSubmit={handleEdit}
         />

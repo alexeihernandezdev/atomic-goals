@@ -16,7 +16,7 @@ interface StepBase {
   order: number;
   startDate?: string | null;
   endDate?: string | null;
-  cycleDay?: string | null;
+  scheduledDate?: string | null;
   cycleGroupId?: string | null;
   estimatedDurationMinutes?: number | null;
   createdAt: string;
@@ -69,7 +69,7 @@ export interface CreateStepCommand {
   currentStatusId?: string;
   startDate?: string;
   endDate?: string;
-  cycleDay?: string;
+  scheduledDate?: string;
   estimatedDurationMinutes?: number;
 }
 
@@ -92,7 +92,7 @@ export interface UpdateStepMetadataCommand {
   order?: number;
   startDate?: string;
   endDate?: string;
-  cycleDay?: string;
+  scheduledDate?: string;
   estimatedDurationMinutes?: number;
 }
 

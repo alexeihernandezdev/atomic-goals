@@ -13,8 +13,14 @@ import { DASH_PALETTES, type DashPalette } from "@/shared/presentation/palette";
 import { StepList, ProgressCalculator } from "@/modules/steps";
 import type { Step } from "@/modules/steps";
 import type { CreateStepFormValues } from "@/modules/steps/presentation/schemas/step.schema";
-import type { StepEditFormValues } from "@/modules/steps/presentation/components/StepEditDialog";
+import type { StepMetadataUpdate } from "@/modules/steps/presentation/components/StepList";
 import { clientContainer } from "@/shared/composition/client-container";
+
+interface StepCycleContext {
+  cycleStart?: string | null;
+  cyclePeriod?: CyclePeriod;
+  customCycleDays?: number | null;
+}
 
 const TYPE_LABEL: Record<string, string> = {
   CONCLUSIVE: "Conclusiva",
@@ -57,17 +63,18 @@ interface GoalDetailScreenProps {
     goalInstanceId: string,
     values: CreateStepFormValues,
     order: number,
+    ctx?: StepCycleContext,
   ) => Promise<{ ok: boolean; step?: Step; message?: string }>;
   createStepsBatchAction: (
     goalInstanceId: string,
     values: CreateStepFormValues,
     baseOrder: number,
-    cyclePeriod?: CyclePeriod,
+    ctx?: StepCycleContext,
   ) => Promise<{ ok: boolean; steps?: Step[]; message?: string }>;
   updateStepMetadataAction: (
     stepId: string,
     goalId: string,
-    values: StepEditFormValues,
+    values: StepMetadataUpdate,
   ) => Promise<{ ok: boolean; step?: Step; message?: string }>;
   updateStepProgressAction: (
     stepId: string,
@@ -543,6 +550,7 @@ export function GoalDetailScreen({
               goalType={goal.type}
               cyclePeriod={goal.cyclePeriod ?? undefined}
               customCycleDays={goal.customCycleDays ?? undefined}
+              cycleStart={instance.cycleStart}
               createAction={createStepAction}
               createBatchAction={createStepsBatchAction}
               updateMetadataAction={(stepId, values) =>

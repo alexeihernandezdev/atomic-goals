@@ -7,6 +7,7 @@ import { z } from "zod";
 import type { Step } from "@/modules/steps/domain/entities/step";
 import type { DashPalette } from "@/shared/presentation/palette";
 import type { CyclePeriod } from "@/modules/goals/domain/enums/cycle-period";
+import { dateToCycleDay } from "../cycle-day";
 import { useOverlayDismiss } from "@/shared/presentation/hooks/use-overlay-dismiss";
 
 const nanToUndefined = (v: unknown) =>
@@ -15,6 +16,7 @@ const nanToUndefined = (v: unknown) =>
 const editSchema = z.object({
   title: z.string().min(1, "El título es obligatorio").max(200),
   weight: z.number().min(0.1).max(100),
+  // recurrence pattern (resolved to a concrete date on submit, same as create)
   cycleDay: z.string().optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
@@ -47,6 +49,7 @@ interface StepEditDialogProps {
   goalType?: "CONCLUSIVE" | "CYCLIC";
   cyclePeriod?: CyclePeriod;
   customCycleDays?: number | null;
+  cycleStart?: string | null;
   onClose: () => void;
   onSubmit: (values: StepEditFormValues) => Promise<{ ok: boolean; message?: string }>;
 }
@@ -60,6 +63,7 @@ export function StepEditDialog({
   goalType,
   cyclePeriod,
   customCycleDays,
+  cycleStart,
   onClose,
   onSubmit,
 }: StepEditDialogProps) {
@@ -74,7 +78,7 @@ export function StepEditDialog({
     defaultValues: {
       title: step.title,
       weight: step.weight,
-      cycleDay: step.cycleDay ?? undefined,
+      cycleDay: dateToCycleDay(step.scheduledDate, cyclePeriod, cycleStart),
       startDate: step.startDate ? step.startDate.substring(0, 10) : undefined,
       endDate: step.endDate ? step.endDate.substring(0, 10) : undefined,
       estimatedDurationMinutes: step.estimatedDurationMinutes ?? undefined,
@@ -89,7 +93,7 @@ export function StepEditDialog({
       reset({
         title: step.title,
         weight: step.weight,
-        cycleDay: step.cycleDay ?? undefined,
+        cycleDay: dateToCycleDay(step.scheduledDate, cyclePeriod, cycleStart),
         startDate: step.startDate ? step.startDate.substring(0, 10) : undefined,
         endDate: step.endDate ? step.endDate.substring(0, 10) : undefined,
         estimatedDurationMinutes: step.estimatedDurationMinutes ?? undefined,
@@ -97,7 +101,7 @@ export function StepEditDialog({
       });
       setError(null);
     }
-  }, [open, step, reset]);
+  }, [open, step, reset, cyclePeriod, cycleStart]);
 
   const handleClose = () => {
     setError(null);
@@ -265,7 +269,7 @@ export function StepEditDialog({
               </div>
             </div>
 
-            {/* Cyclic: day-within-cycle */}
+            {/* Cyclic: day-within-cycle (resolved to a concrete date on submit) */}
             {showCycleDay && (
               <div style={fieldStyle}>
                 {cyclePeriod === "WEEKLY" && (

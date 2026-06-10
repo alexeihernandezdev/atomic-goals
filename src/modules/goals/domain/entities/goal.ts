@@ -23,6 +23,7 @@ export interface Goal {
   type: GoalType;
   cyclePeriod?: CyclePeriod | null;
   customCycleDays?: number | null;
+  cloneStepsOnRenewal?: boolean | null;
   startDate?: string | null;
   endDate?: string | null;
   estimatedDurationMinutes?: number | null;
@@ -39,6 +40,7 @@ export interface CreateGoalCommand {
   type: GoalType;
   cyclePeriod?: CyclePeriod;
   customCycleDays?: number;
+  cloneStepsOnRenewal?: boolean;
 }
 
 export interface UpdateGoalCommand {
@@ -48,6 +50,7 @@ export interface UpdateGoalCommand {
   categoryId?: string;
   cyclePeriod?: CyclePeriod;
   customCycleDays?: number;
+  cloneStepsOnRenewal?: boolean;
 }
 
 export interface CategoryOption {

@@ -10,6 +10,8 @@ export function toCreateGoalCommand(values: GoalFormValues): CreateGoalCommand {
     cyclePeriod: values.type === "CYCLIC" ? values.cyclePeriod : undefined,
     customCycleDays:
       values.cyclePeriod === "CUSTOM_DAYS" ? values.customCycleDays : undefined,
+    cloneStepsOnRenewal:
+      values.type === "CYCLIC" ? values.cloneStepsOnRenewal : undefined,
   };
 }
 
@@ -24,5 +26,6 @@ export function toUpdateGoalCommand(
     categoryId: values.categoryId,
     cyclePeriod: values.cyclePeriod,
     customCycleDays: values.customCycleDays,
+    cloneStepsOnRenewal: values.cloneStepsOnRenewal,
   };
 }

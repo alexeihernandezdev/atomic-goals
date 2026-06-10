@@ -24,6 +24,7 @@ export interface RawGoal {
   type: string;
   cyclePeriod?: string | null;
   customCycleDays?: number | null;
+  cloneStepsOnRenewal?: boolean | null;
   startDate?: string | null;
   endDate?: string | null;
   estimatedDurationMinutes?: number | null;
@@ -58,6 +59,7 @@ export class GoalMapper {
       type: raw.type as GoalType,
       cyclePeriod: (raw.cyclePeriod as CyclePeriod) ?? null,
       customCycleDays: raw.customCycleDays ?? null,
+      cloneStepsOnRenewal: raw.cloneStepsOnRenewal ?? null,
       startDate: raw.startDate ?? null,
       endDate: raw.endDate ?? null,
       estimatedDurationMinutes: raw.estimatedDurationMinutes ?? null,

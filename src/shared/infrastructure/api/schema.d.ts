@@ -266,6 +266,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/steps/batch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create several steps at once as a linked recurring group */
+        post: operations["StepsController_createBatch"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/steps/{id}": {
         parameters: {
             query?: never;
@@ -550,6 +567,11 @@ export interface components {
              * @example 14
              */
             customCycleDays?: number;
+            /**
+             * @description CYCLIC only: when a period rolls over, clone the previous steps with adapted dates (default true). False starts each period empty.
+             * @example true
+             */
+            cloneStepsOnRenewal?: boolean;
         };
         UpdateGoalDto: {
             /** @example Run 5k every day */
@@ -565,6 +587,8 @@ export interface components {
             cyclePeriod?: "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY" | "CUSTOM_DAYS";
             /** @example 14 */
             customCycleDays?: number;
+            /** @example true */
+            cloneStepsOnRenewal?: boolean;
         };
         UpdateGoalInstanceStatusDto: {
             /**
@@ -648,6 +672,82 @@ export interface components {
             endDate?: string;
             /** @example 60 */
             estimatedDurationMinutes?: number;
+            /**
+             * @description Concrete calendar date this step is scheduled for (CYCLIC)
+             * @example 2025-01-06T00:00:00.000Z
+             */
+            scheduledDate?: string;
+        };
+        CreateStepBatchItemDto: {
+            /**
+             * @example PROGRESS_BAR
+             * @enum {string}
+             */
+            type: "PROGRESS_BAR" | "CHECK" | "STATUS" | "COUNTER";
+            /** @example Complete chapter 1 */
+            title: string;
+            /** @example Read pages 1–30 */
+            description?: string;
+            /**
+             * @description Weight for weighted-average progress (default 1)
+             * @example 1.5
+             */
+            weight?: number;
+            /**
+             * @description Unit label (PROGRESS_BAR and COUNTER)
+             * @example pages
+             */
+            unit?: string;
+            /**
+             * @description Initial current value (PROGRESS_BAR, COUNTER)
+             * @example 0
+             */
+            current?: number;
+            /**
+             * @description Target value — required for PROGRESS_BAR
+             * @example 100
+             */
+            target?: number;
+            /**
+             * @description Max value — required for COUNTER
+             * @example 50
+             */
+            max?: number;
+            /**
+             * @description Min value for COUNTER (default 0)
+             * @example 0
+             */
+            min?: number;
+            /**
+             * @description Initial done state for CHECK
+             * @example false
+             */
+            done?: boolean;
+            /** @description Status options — required for STATUS */
+            statuses?: components["schemas"]["StatusOptionDto"][];
+            /**
+             * @description Active status id — required for STATUS
+             * @example not-started
+             */
+            currentStatusId?: string;
+            /** @example 2025-01-01T00:00:00.000Z */
+            startDate?: string;
+            /** @example 2025-03-31T00:00:00.000Z */
+            endDate?: string;
+            /** @example 60 */
+            estimatedDurationMinutes?: number;
+            /**
+             * @description Concrete calendar date this step is scheduled for (CYCLIC)
+             * @example 2025-01-06T00:00:00.000Z
+             */
+            scheduledDate?: string;
+        };
+        CreateStepsBatchDto: {
+            /** @example 3fa85f64-5717-4562-b3fc-2c963f66afa6 */
+            goalInstanceId: string;
+            /** @example 0 */
+            baseOrder: number;
+            steps: components["schemas"]["CreateStepBatchItemDto"][];
         };
         UpdateStepMetadataDto: {
             /** @example Complete chapter 2 */
@@ -664,6 +764,11 @@ export interface components {
             endDate?: string;
             /** @example 45 */
             estimatedDurationMinutes?: number;
+            /**
+             * @description Concrete calendar date this step is scheduled for (CYCLIC)
+             * @example 2025-01-06T00:00:00.000Z
+             */
+            scheduledDate?: string;
         };
         UpdateStepProgressDto: {
             /**
@@ -1124,6 +1229,27 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["CreateStepDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    StepsController_createBatch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateStepsBatchDto"];
             };
         };
         responses: {

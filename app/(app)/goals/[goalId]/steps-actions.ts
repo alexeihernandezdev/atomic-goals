@@ -6,13 +6,25 @@ import { createStepSchema } from "@/modules/steps/presentation/schemas/step.sche
 import type { CreateStepFormValues } from "@/modules/steps/presentation/schemas/step.schema";
 import type { Step, CreateStepBatchItem } from "@/modules/steps/domain/entities/step";
 import type { CyclePeriod } from "@/modules/goals/domain/enums/cycle-period";
-import { titleWithDaySuffix } from "@/modules/steps/presentation/cycle-day";
+import {
+  titleWithDaySuffix,
+  resolveCycleDayToDate,
+} from "@/modules/steps/presentation/cycle-day";
 import { DomainError } from "@/shared/domain/errors/domain-error";
+
+// Context needed to resolve a recurrence pattern (cycleDay) into a concrete
+// scheduledDate: the active instance's cycleStart plus the goal's cadence.
+export interface StepCycleContext {
+  cycleStart?: string | null;
+  cyclePeriod?: CyclePeriod;
+  customCycleDays?: number | null;
+}
 
 export async function createStepAction(
   goalInstanceId: string,
   input: CreateStepFormValues,
   order: number,
+  ctx?: StepCycleContext,
 ): Promise<{ ok: boolean; step?: Step; message?: string }> {
   const parsed = createStepSchema.safeParse(input);
   if (!parsed.success) {
@@ -23,6 +35,11 @@ export async function createStepAction(
   }
 
   const values = parsed.data;
+  const scheduledDate = resolveCycleDayToDate(
+    values.cycleDay,
+    ctx?.cyclePeriod,
+    ctx?.cycleStart,
+  );
 
   try {
     const container = await serverContainer();
@@ -49,7 +66,7 @@ export async function createStepAction(
         : undefined,
       startDate: values.startDate,
       endDate: values.endDate,
-      cycleDay: values.cycleDay,
+      scheduledDate,
       estimatedDurationMinutes: values.estimatedDurationMinutes,
     });
     revalidateTag(`goal:${step.goalInstanceId}`, "max");
@@ -64,7 +81,7 @@ export async function createStepsBatchAction(
   goalInstanceId: string,
   input: CreateStepFormValues,
   baseOrder: number,
-  cyclePeriod?: CyclePeriod,
+  ctx?: StepCycleContext,
 ): Promise<{ ok: boolean; steps?: Step[]; message?: string }> {
   const parsed = createStepSchema.safeParse(input);
   if (!parsed.success) {
@@ -83,7 +100,7 @@ export async function createStepsBatchAction(
   const baseTitle = values.title;
   const item = (cycleDay: string): CreateStepBatchItem => ({
     type: values.type,
-    title: titleWithDaySuffix(baseTitle, cycleDay, cyclePeriod),
+    title: titleWithDaySuffix(baseTitle, cycleDay, ctx?.cyclePeriod),
     description: values.description,
     weight: values.weight ?? 1,
     unit: values.unit,
@@ -99,7 +116,11 @@ export async function createStepsBatchAction(
     })),
     startDate: values.startDate,
     endDate: values.endDate,
-    cycleDay,
+    scheduledDate: resolveCycleDayToDate(
+      cycleDay,
+      ctx?.cyclePeriod,
+      ctx?.cycleStart,
+    ),
     estimatedDurationMinutes: values.estimatedDurationMinutes,
   });
 
@@ -156,7 +177,7 @@ export async function updateStepMetadataAction(
   values: {
     title?: string;
     weight?: number;
-    cycleDay?: string;
+    scheduledDate?: string;
     startDate?: string;
     endDate?: string;
     estimatedDurationMinutes?: number;
@@ -170,7 +191,7 @@ export async function updateStepMetadataAction(
       weight: values.weight,
       startDate: values.startDate,
       endDate: values.endDate,
-      cycleDay: values.cycleDay,
+      scheduledDate: values.scheduledDate,
       estimatedDurationMinutes: values.estimatedDurationMinutes,
     });
     revalidateTag(`goal:${goalId}`, "max");
