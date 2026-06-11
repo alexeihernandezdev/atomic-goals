@@ -1,6 +1,15 @@
 "use client";
 
 import * as React from "react";
+import {
+  DndContext,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  useDraggable,
+  useDroppable,
+  type DragEndEvent,
+} from "@dnd-kit/core";
 import type { DashPalette } from "@/shared/presentation/palette";
 import type { CalendarEvent } from "../../domain/calendar-event";
 
@@ -13,6 +22,8 @@ interface WeekViewProps {
   month: number; // 0-indexed
   events: CalendarEvent[];
   anchorDay?: number; // day-of-month to anchor the visible week (default: today or 1)
+  onSchedule: (date: Date) => void;
+  onReschedule: (stepId: string, target: Date) => Promise<boolean>;
 }
 
 function eventsForDay(events: CalendarEvent[], year: number, month: number, day: number) {
@@ -28,13 +39,83 @@ function eventHour(ev: CalendarEvent): number | null {
   return parseInt(ev.time.split(":")[0], 10);
 }
 
-export function WeekView({ palette, year, month, events, anchorDay }: WeekViewProps) {
+// Step-backed events can be dragged to another day; milestones are anchored.
+function isDraggable(ev: CalendarEvent): boolean {
+  return !!ev.stepId && (ev.type === "step" || ev.type === "cyclic");
+}
+
+function dateKey(y: number, m: number, d: number): string {
+  return `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+}
+
+// Droppable wrapper around a day cell. Many cells map to the same calendar day
+// (all-day row + hour slots), so the id carries a per-cell suffix while the
+// target date is parsed from the leading "YYYY-MM-DD".
+function DroppableCell({
+  id,
+  style,
+  children,
+  palette,
+  onClick,
+}: {
+  id: string;
+  style: React.CSSProperties;
+  children?: React.ReactNode;
+  palette: DashPalette;
+  onClick?: () => void;
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id });
+  return (
+    <div
+      ref={setNodeRef}
+      onClick={onClick}
+      style={{
+        ...style,
+        background: isOver ? palette.primary + "22" : style.background,
+        outline: isOver ? `1.5px dashed ${palette.primary}` : "none",
+        outlineOffset: -2,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function DraggableStep({
+  ev,
+  children,
+}: {
+  ev: CalendarEvent;
+  children: React.ReactNode;
+}) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: `step-${ev.stepId}`,
+    data: { stepId: ev.stepId, sourceDate: ev.date },
+  });
+  return (
+    <div
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      style={{ cursor: "grab", opacity: isDragging ? 0.4 : 1, touchAction: "none" }}
+    >
+      {children}
+    </div>
+  );
+}
+
+export function WeekView({
+  palette, year, month, events, anchorDay, onSchedule, onReschedule,
+}: WeekViewProps) {
   const today = new Date();
   const todayYear = today.getFullYear();
   const todayMonth = today.getMonth();
   const todayDay = today.getDate();
 
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+  );
+
   const anchor =
     anchorDay ??
     (year === todayYear && month === todayMonth ? todayDay : 1);
@@ -53,226 +134,263 @@ export function WeekView({ palette, year, month, events, anchorDay }: WeekViewPr
     return { year: d.getFullYear(), month: d.getMonth(), day: d.getDate() };
   });
 
-  return (
-    <div
-      style={{
-        border: `1.5px solid ${palette.line}`,
-        background: palette.surface,
-        overflow: "hidden",
-      }}
-    >
-      {/* header row */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "60px repeat(7, 1fr)",
-          borderBottom: `1.5px solid ${palette.line}`,
-          background: palette.surface2,
-        }}
-      >
-        <div style={{ borderRight: `1px solid ${palette.lineSofter}` }} />
-        {weekDays.map(({ year: wy, month: wm, day: wd }, i) => {
-          const isToday =
-            wd === todayDay && wm === todayMonth && wy === todayYear;
-          return (
-            <div
-              key={i}
-              style={{
-                padding: "8px 10px",
-                borderRight:
-                  i < 6 ? `1px solid ${palette.lineSofter}` : "none",
-                background: isToday ? palette.lime : "transparent",
-                color: isToday ? palette.line : palette.ink,
-              }}
-            >
-              <div
-                style={{
-                  fontFamily: '"JetBrains Mono", monospace',
-                  fontSize: 9,
-                  letterSpacing: "0.1em",
-                  textTransform: "uppercase",
-                  opacity: 0.7,
-                }}
-              >
-                {WEEKDAY_LABELS[i]}
-              </div>
-              <div
-                style={{
-                  fontFamily: '"Space Grotesk", system-ui, sans-serif',
-                  fontSize: 18,
-                  fontWeight: 700,
-                  letterSpacing: "-0.02em",
-                }}
-              >
-                {wd}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+  function handleDragEnd(e: DragEndEvent) {
+    const stepId = e.active.data.current?.stepId as string | undefined;
+    const sourceDate = e.active.data.current?.sourceDate as string | undefined;
+    const overId = e.over?.id;
+    if (!stepId || typeof overId !== "string") return;
+    // id shape: "YYYY-MM-DD::<cell>"
+    const targetKey = overId.split("::")[0];
+    if (targetKey === sourceDate) return;
+    const [ty, tm, td] = targetKey.split("-").map(Number);
+    if (!ty || !tm || !td) return;
+    void onReschedule(stepId, new Date(ty, tm - 1, td));
+  }
 
-      {/* all-day row */}
+  return (
+    <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
       <div
         style={{
-          display: "grid",
-          gridTemplateColumns: "60px repeat(7, 1fr)",
-          borderBottom: `1.5px solid ${palette.line}`,
-          minHeight: 44,
+          border: `1.5px solid ${palette.line}`,
+          background: palette.surface,
+          overflow: "hidden",
         }}
       >
+        {/* header row */}
         <div
           style={{
-            borderRight: `1px solid ${palette.lineSofter}`,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontFamily: '"JetBrains Mono", monospace',
-            fontSize: 9,
-            color: palette.inkDim,
-            letterSpacing: "0.06em",
-            textTransform: "uppercase",
-            textAlign: "center",
-            lineHeight: 1.4,
+            display: "grid",
+            gridTemplateColumns: "60px repeat(7, 1fr)",
+            borderBottom: `1.5px solid ${palette.line}`,
+            background: palette.surface2,
           }}
         >
-          todo{"\n"}el día
+          <div style={{ borderRight: `1px solid ${palette.lineSofter}` }} />
+          {weekDays.map(({ year: wy, month: wm, day: wd }, i) => {
+            const isToday =
+              wd === todayDay && wm === todayMonth && wy === todayYear;
+            return (
+              <div
+                key={i}
+                onClick={() => onSchedule(new Date(wy, wm, wd))}
+                title="Agendar en este día"
+                style={{
+                  padding: "8px 10px",
+                  borderRight:
+                    i < 6 ? `1px solid ${palette.lineSofter}` : "none",
+                  background: isToday ? palette.lime : "transparent",
+                  color: isToday ? palette.line : palette.ink,
+                  cursor: "pointer",
+                }}
+              >
+                <div
+                  style={{
+                    fontFamily: '"JetBrains Mono", monospace',
+                    fontSize: 9,
+                    letterSpacing: "0.1em",
+                    textTransform: "uppercase",
+                    opacity: 0.7,
+                  }}
+                >
+                  {WEEKDAY_LABELS[i]}
+                </div>
+                <div
+                  style={{
+                    fontFamily: '"Space Grotesk", system-ui, sans-serif',
+                    fontSize: 18,
+                    fontWeight: 700,
+                    letterSpacing: "-0.02em",
+                  }}
+                >
+                  {wd}
+                </div>
+              </div>
+            );
+          })}
         </div>
-        {weekDays.map(({ year: wy, month: wm, day: wd }, i) => {
-          const isToday =
-            wd === todayDay && wm === todayMonth && wy === todayYear;
-          const dayEvs = eventsForDay(events, wy, wm, wd).filter(
-            (e) => !e.time,
-          );
-          return (
+
+        {/* all-day row */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "60px repeat(7, 1fr)",
+            borderBottom: `1.5px solid ${palette.line}`,
+            minHeight: 44,
+          }}
+        >
+          <div
+            style={{
+              borderRight: `1px solid ${palette.lineSofter}`,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontFamily: '"JetBrains Mono", monospace',
+              fontSize: 9,
+              color: palette.inkDim,
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+              textAlign: "center",
+              lineHeight: 1.4,
+            }}
+          >
+            todo{"\n"}el día
+          </div>
+          {weekDays.map(({ year: wy, month: wm, day: wd }, i) => {
+            const isToday =
+              wd === todayDay && wm === todayMonth && wy === todayYear;
+            const dayEvs = eventsForDay(events, wy, wm, wd).filter(
+              (e) => !e.time,
+            );
+            return (
+              <DroppableCell
+                key={i}
+                id={`${dateKey(wy, wm, wd)}::allday`}
+                palette={palette}
+                style={{
+                  padding: 4,
+                  borderRight:
+                    i < 6 ? `1px solid ${palette.lineSofter}` : "none",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 3,
+                  background: isToday ? palette.lime + "14" : "transparent",
+                }}
+              >
+                {dayEvs.map((ev) => {
+                  const isMilestone =
+                    ev.type === "goal-end" || ev.type === "goal-start";
+                  const chip = (
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 5,
+                        padding: "1px 4px",
+                        background: isMilestone
+                          ? ev.categoryColor
+                          : "transparent",
+                        borderLeft: isMilestone
+                          ? "none"
+                          : `3px solid ${ev.categoryColor}`,
+                        color: isMilestone ? palette.bg : palette.ink,
+                        fontFamily: '"Space Grotesk", system-ui, sans-serif',
+                        fontSize: 10,
+                        fontWeight: isMilestone ? 700 : 600,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        lineHeight: 1.3,
+                      }}
+                    >
+                      {ev.title}
+                    </div>
+                  );
+                  return isDraggable(ev) ? (
+                    <DraggableStep key={ev.id} ev={ev}>
+                      {chip}
+                    </DraggableStep>
+                  ) : (
+                    <React.Fragment key={ev.id}>{chip}</React.Fragment>
+                  );
+                })}
+              </DroppableCell>
+            );
+          })}
+        </div>
+
+        {/* hour grid */}
+        <div style={{ maxHeight: 520, overflow: "auto" }}>
+          {HOUR_SLOTS.map((h, hi) => (
             <div
-              key={i}
+              key={h}
               style={{
-                padding: 4,
-                borderRight:
-                  i < 6 ? `1px solid ${palette.lineSofter}` : "none",
-                display: "flex",
-                flexDirection: "column",
-                gap: 3,
-                background: isToday ? palette.lime + "14" : "transparent",
+                display: "grid",
+                gridTemplateColumns: "60px repeat(7, 1fr)",
+                borderBottom:
+                  hi < HOUR_SLOTS.length - 1
+                    ? `1px solid ${palette.lineSofter}`
+                    : "none",
+                minHeight: 60,
               }}
             >
-              {dayEvs.map((ev) => {
-                const isMilestone =
-                  ev.type === "goal-end" || ev.type === "goal-start";
+              <div
+                style={{
+                  borderRight: `1px solid ${palette.lineSofter}`,
+                  padding: "6px 8px",
+                  fontFamily: '"JetBrains Mono", monospace',
+                  fontSize: 10,
+                  color: palette.inkDim,
+                  letterSpacing: "0.04em",
+                }}
+              >
+                {String(h).padStart(2, "0")}:00
+              </div>
+              {weekDays.map(({ year: wy, month: wm, day: wd }, i) => {
+                const isToday =
+                  wd === todayDay && wm === todayMonth && wy === todayYear;
+                const slotEvs = eventsForDay(events, wy, wm, wd).filter((e) => {
+                  const eh = eventHour(e);
+                  return eh !== null && eh >= h && eh < h + 2;
+                });
                 return (
-                  <div
-                    key={ev.id}
+                  <DroppableCell
+                    key={i}
+                    id={`${dateKey(wy, wm, wd)}::h${h}`}
+                    palette={palette}
                     style={{
+                      padding: 4,
+                      borderRight:
+                        i < 6 ? `1px solid ${palette.lineSofter}` : "none",
                       display: "flex",
-                      alignItems: "center",
-                      gap: 5,
-                      padding: "1px 4px",
-                      background: isMilestone
-                        ? ev.categoryColor
+                      flexDirection: "column",
+                      gap: 3,
+                      background: isToday
+                        ? palette.lime + "10"
                         : "transparent",
-                      borderLeft: isMilestone
-                        ? "none"
-                        : `3px solid ${ev.categoryColor}`,
-                      color: isMilestone ? palette.bg : palette.ink,
-                      fontFamily: '"Space Grotesk", system-ui, sans-serif',
-                      fontSize: 10,
-                      fontWeight: isMilestone ? 700 : 600,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                      lineHeight: 1.3,
                     }}
                   >
-                    {ev.title}
-                  </div>
+                    {slotEvs.map((ev) => {
+                      const chip = (
+                        <div
+                          style={{
+                            padding: "4px 6px",
+                            background: ev.categoryColor,
+                            color: palette.bg,
+                            fontFamily:
+                              '"Space Grotesk", system-ui, sans-serif',
+                            fontSize: 10,
+                            fontWeight: 700,
+                            letterSpacing: "-0.005em",
+                            lineHeight: 1.2,
+                          }}
+                        >
+                          <div
+                            style={{
+                              fontFamily: '"JetBrains Mono", monospace',
+                              fontSize: 8,
+                              opacity: 0.85,
+                            }}
+                          >
+                            {ev.time}
+                          </div>
+                          {ev.title}
+                        </div>
+                      );
+                      return isDraggable(ev) ? (
+                        <DraggableStep key={ev.id} ev={ev}>
+                          {chip}
+                        </DraggableStep>
+                      ) : (
+                        <React.Fragment key={ev.id}>{chip}</React.Fragment>
+                      );
+                    })}
+                  </DroppableCell>
                 );
               })}
             </div>
-          );
-        })}
+          ))}
+        </div>
       </div>
-
-      {/* hour grid */}
-      <div style={{ maxHeight: 520, overflow: "auto" }}>
-        {HOUR_SLOTS.map((h, hi) => (
-          <div
-            key={h}
-            style={{
-              display: "grid",
-              gridTemplateColumns: "60px repeat(7, 1fr)",
-              borderBottom:
-                hi < HOUR_SLOTS.length - 1
-                  ? `1px solid ${palette.lineSofter}`
-                  : "none",
-              minHeight: 60,
-            }}
-          >
-            <div
-              style={{
-                borderRight: `1px solid ${palette.lineSofter}`,
-                padding: "6px 8px",
-                fontFamily: '"JetBrains Mono", monospace',
-                fontSize: 10,
-                color: palette.inkDim,
-                letterSpacing: "0.04em",
-              }}
-            >
-              {String(h).padStart(2, "0")}:00
-            </div>
-            {weekDays.map(({ year: wy, month: wm, day: wd }, i) => {
-              const isToday =
-                wd === todayDay && wm === todayMonth && wy === todayYear;
-              const slotEvs = eventsForDay(events, wy, wm, wd).filter((e) => {
-                const eh = eventHour(e);
-                return eh !== null && eh >= h && eh < h + 2;
-              });
-              return (
-                <div
-                  key={i}
-                  style={{
-                    padding: 4,
-                    borderRight:
-                      i < 6 ? `1px solid ${palette.lineSofter}` : "none",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 3,
-                    background: isToday
-                      ? palette.lime + "10"
-                      : "transparent",
-                  }}
-                >
-                  {slotEvs.map((ev) => (
-                    <div
-                      key={ev.id}
-                      style={{
-                        padding: "4px 6px",
-                        background: ev.categoryColor,
-                        color: palette.bg,
-                        fontFamily: '"Space Grotesk", system-ui, sans-serif',
-                        fontSize: 10,
-                        fontWeight: 700,
-                        letterSpacing: "-0.005em",
-                        lineHeight: 1.2,
-                      }}
-                    >
-                      <div
-                        style={{
-                          fontFamily: '"JetBrains Mono", monospace',
-                          fontSize: 8,
-                          opacity: 0.85,
-                        }}
-                      >
-                        {ev.time}
-                      </div>
-                      {ev.title}
-                    </div>
-                  ))}
-                </div>
-              );
-            })}
-          </div>
-        ))}
-      </div>
-    </div>
+    </DndContext>
   );
 }

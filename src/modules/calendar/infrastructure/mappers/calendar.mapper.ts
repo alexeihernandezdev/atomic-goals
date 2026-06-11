@@ -8,6 +8,7 @@ interface RawCalendarEvent {
   time?: string | null;
   type?: string;
   kind?: string;
+  stepId?: string;
   goalId?: string;
   goalName?: string;
   goal?: string;
@@ -33,6 +34,11 @@ export class CalendarMapper {
       date: raw.date ?? '',
       time: raw.time ?? null,
       type,
+      // Step-backed events (step/cyclic) expose the step id so the calendar can
+      // reschedule them; goal milestones (goal-start/goal-end) have no step.
+      stepId:
+        raw.stepId ??
+        (type === 'step' || type === 'cyclic' ? raw.id ?? null : null),
       goalId: raw.goalId ?? '',
       goalName: raw.goalName ?? raw.goal ?? raw.goalTitle ?? '',
       categoryName: raw.categoryName ?? raw.category ?? '',

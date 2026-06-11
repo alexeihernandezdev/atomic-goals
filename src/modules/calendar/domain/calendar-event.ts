@@ -6,6 +6,7 @@ export interface CalendarEvent {
   date: string;        // YYYY-MM-DD
   time: string | null; // HH:mm
   type: CalendarEventType;
+  stepId: string | null; // id of the underlying step (null for goal milestones)
   goalId: string;
   goalName: string;
   categoryName: string;

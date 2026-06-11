@@ -13,6 +13,7 @@ interface EventPopoverProps {
   palette: DashPalette;
   anchorRight: boolean;
   onClose: () => void;
+  onSchedule: () => void;
 }
 
 const MONTH_NAMES_GEN = [
@@ -21,7 +22,7 @@ const MONTH_NAMES_GEN = [
 ];
 
 export function EventPopover({
-  day, month, year, isToday, events, palette, anchorRight, onClose,
+  day, month, isToday, events, palette, anchorRight, onClose, onSchedule,
 }: EventPopoverProps) {
   return (
     <div
@@ -168,6 +169,7 @@ export function EventPopover({
           </div>
         )}
         <button
+          onClick={onSchedule}
           style={{
             width: "100%",
             marginTop: 10,

@@ -1,6 +1,11 @@
 import { serverContainer } from "@/shared/composition/server-container";
 import { CalendarScreen } from "@/modules/calendar";
 import { redirectIfUnauthorized } from "@/shared/presentation/auth/session-expired";
+import {
+  scheduleNewStepAction,
+  assignStepDateAction,
+  listInstanceStepsAction,
+} from "./actions";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Calendario — Atomic Goals" };
@@ -27,6 +32,11 @@ export default async function CalendarPage() {
       initialEvents={events}
       initialYear={year}
       initialMonth={month}
+      scheduleActions={{
+        scheduleNew: scheduleNewStepAction,
+        assignDate: assignStepDateAction,
+        listSteps: listInstanceStepsAction,
+      }}
     />
   );
 }

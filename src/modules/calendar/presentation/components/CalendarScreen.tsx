@@ -8,11 +8,13 @@ import type { CalendarEvent } from "../../domain/calendar-event";
 import { CalendarFilters } from "./CalendarFilters";
 import { MonthView } from "./MonthView";
 import { WeekView } from "./WeekView";
+import { ScheduleStepDialog, type ScheduleStepActions } from "./ScheduleStepDialog";
 
 interface CalendarScreenProps {
   initialEvents: CalendarEvent[];
   initialYear: number;
   initialMonth: number; // 0-indexed
+  scheduleActions: ScheduleStepActions;
 }
 
 function monthBounds(year: number, month: number) {
@@ -25,6 +27,7 @@ export function CalendarScreen({
   initialEvents,
   initialYear,
   initialMonth,
+  scheduleActions,
 }: CalendarScreenProps) {
   const { resolvedTheme } = useTheme();
   const palette =
@@ -37,6 +40,7 @@ export function CalendarScreen({
   const [openDay, setOpenDay] = React.useState<number | null>(null);
   const [events, setEvents] = React.useState<CalendarEvent[]>(initialEvents);
   const [loading, setLoading] = React.useState(false);
+  const [scheduleFor, setScheduleFor] = React.useState<Date | null>(null);
 
   const categories = React.useMemo(() => {
     const map = new Map<string, { name: string; color: string }>();
@@ -90,6 +94,39 @@ export function CalendarScreen({
     setMonth(newMonth);
     setOpenDay(null);
     await loadMonth(newYear, newMonth);
+  }
+
+  function openScheduleForDay(day: number) {
+    setScheduleFor(new Date(year, month, day));
+  }
+
+  // Week view can span two months, so it schedules by concrete date.
+  function openScheduleForDate(date: Date) {
+    setScheduleFor(date);
+  }
+
+  function openScheduleFromHeader() {
+    const now = new Date();
+    const day =
+      openDay ??
+      (now.getFullYear() === year && now.getMonth() === month
+        ? now.getDate()
+        : 1);
+    setScheduleFor(new Date(year, month, day));
+  }
+
+  // Reschedule a step to a new day (drag & drop): persist, then refresh events.
+  async function handleReschedule(stepId: string, target: Date) {
+    const iso = new Date(
+      target.getFullYear(),
+      target.getMonth(),
+      target.getDate(),
+    ).toISOString();
+    const res = await scheduleActions.assignDate(stepId, iso);
+    if (res.ok) {
+      await loadMonth(year, month);
+    }
+    return res.ok;
   }
 
   const today = new Date();
@@ -146,6 +183,7 @@ export function CalendarScreen({
           </h1>
         </div>
         <button
+          onClick={openScheduleFromHeader}
           style={{
             background: palette.line,
             color: palette.bg,
@@ -192,6 +230,8 @@ export function CalendarScreen({
           openDay={openDay}
           onDayClick={(d) => setOpenDay(openDay === d ? null : d)}
           onPopoverClose={() => setOpenDay(null)}
+          onSchedule={openScheduleForDay}
+          onReschedule={handleReschedule}
           loading={loading}
         />
       ) : (
@@ -200,6 +240,8 @@ export function CalendarScreen({
           year={year}
           month={month}
           events={filteredEvents}
+          onSchedule={openScheduleForDate}
+          onReschedule={handleReschedule}
         />
       )}
 
@@ -254,6 +296,16 @@ export function CalendarScreen({
           </span>
         )}
       </div>
+
+      {scheduleFor && (
+        <ScheduleStepDialog
+          date={scheduleFor}
+          palette={palette}
+          actions={scheduleActions}
+          onClose={() => setScheduleFor(null)}
+          onScheduled={() => loadMonth(year, month)}
+        />
+      )}
     </div>
   );
 }
